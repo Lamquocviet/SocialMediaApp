@@ -1,5 +1,4 @@
 import asyncHandler from "express-async-handler";
-import { getAuth } from "@clerk/express";
 import Comment from "../models/comment.model.js";
 import Post from "../models/post.model.js";
 import User from "../models/user.model.js";
@@ -16,7 +15,7 @@ export const getComments = asyncHandler(async (req, res) => {
 });
 
 export const createComment = asyncHandler(async (req, res) => {
-  const { userId } = getAuth(req);
+  const user = req.user;
   const { postId } = req.params;
   const { content } = req.body;
 
@@ -24,10 +23,10 @@ export const createComment = asyncHandler(async (req, res) => {
     return res.status(400).json({ error: "Comment content is required" });
   }
 
-  const user = await User.findOne({ clerkId: userId });
   const post = await Post.findById(postId);
 
-  if (!user || !post) return res.status(404).json({ error: "User or post not found" });
+  if (!user || !post)
+    return res.status(404).json({ error: "User or post not found" });
 
   const comment = await Comment.create({
     user: user._id,
@@ -55,10 +54,9 @@ export const createComment = asyncHandler(async (req, res) => {
 });
 
 export const deleteComment = asyncHandler(async (req, res) => {
-  const { userId } = getAuth(req);
+  const user = req.user;
   const { commentId } = req.params;
 
-  const user = await User.findOne({ clerkId: userId });
   const comment = await Comment.findById(commentId);
 
   if (!user || !comment) {

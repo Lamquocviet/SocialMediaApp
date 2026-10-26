@@ -1,37 +1,36 @@
-import { getAuth } from "@clerk/express";
+import jwt from "jsonwebtoken";
 import User from "../models/user.model.js";
+import { ENV } from "../config/env.js";
 
 export const protectRoute = async (req, res, next) => {
   try {
-    const { isAuthenticated, userId } = getAuth(req);
+    const authHeader = req.headers.authorization || req.headers.Authorization;
+    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
 
-    console.log("Auth debug:", {
-      isAuthenticated,
-      userId,
-      path: req.originalUrl,
-    });
-
-    // Bước 1: Kiểm tra đăng nhập bằng Clerk
-    if (!isAuthenticated || !userId) {
+    if (!token) {
       return res.status(401).json({
-        message: "Unauthorized - you must be logged in",
+        message: "Unauthorized - access token is required",
       });
     }
 
-    // Bước 2: Tìm user trong MongoDB
-    const user = await User.findOne({ clerkId: userId });
+    const decoded = jwt.verify(token, ENV.JWT_SECRET);
+    const user = await User.findById(decoded.userId || decoded.sub || decoded.id);
 
     if (!user) {
-      return res.status(404).json({
-        message: "User chưa được đồng bộ vào MongoDB",
+      return res.status(401).json({
+        message: "Unauthorized - user not found",
       });
     }
 
-    // Bước 3: Gắn user MongoDB vào request
     req.user = user;
+    req.userId = user._id.toString();
 
     next();
   } catch (error) {
-    next(error);
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({ message: "Unauthorized - token expired" });
+    }
+
+    return res.status(401).json({ message: "Unauthorized - invalid token" });
   }
 };

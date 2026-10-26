@@ -1,9 +1,10 @@
 import express from "express";
 import cors from "cors";
-import { clerkMiddleware, getAuth } from "@clerk/express";
+import cookieParser from "cookie-parser";
 import http from "http";
-import { initSocket } from "./socket.js";
+import { initSocket } from "./socket/index.js";
 
+import authRoutes from "./routes/auth.route.js";
 import userRoutes from "./routes/user.route.js";
 import postRoutes from "./routes/post.route.js";
 import commentRoutes from "./routes/comment.route.js";
@@ -16,22 +17,19 @@ import { protectRoute } from "./middleware/auth.middleware.js";
 
 const app = express();
 
-app.use(cors());
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+  }),
+);
 app.use(express.json());
-
-app.use(clerkMiddleware());
+app.use(cookieParser());
 app.use(arcjetMiddleware);
 
 app.get("/", (req, res) => res.send("Hello from server"));
+app.use("/api/auth", authRoutes);
 
-app.get("/api/auth-debug", (req, res) => {
-  const { isAuthenticated, userId } = getAuth(req);
-
-  return res.json({
-    isAuthenticated,
-    userId,
-  });
-});
 app.use(protectRoute);
 app.use("/api/users", userRoutes);
 app.use("/api/posts", postRoutes);
