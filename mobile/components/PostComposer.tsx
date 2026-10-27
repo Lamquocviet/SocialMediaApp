@@ -1,7 +1,14 @@
 import { useCreatePost } from "@/hooks/useCreatePost";
-import { useUser } from "@clerk/clerk-expo";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { Feather } from "@expo/vector-icons";
-import { View, Text, Image, TextInput, TouchableOpacity, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  Image,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
+} from "react-native";
 
 const PostComposer = () => {
   const {
@@ -15,12 +22,18 @@ const PostComposer = () => {
     createPost,
   } = useCreatePost();
 
-  const { user } = useUser();
+  const { currentUser } = useCurrentUser();
 
   return (
     <View className="border-b border-gray-100 p-4 bg-white">
       <View className="flex-row">
-        <Image source={{ uri: user?.imageUrl }} className="w-12 h-12 rounded-full mr-3" />
+        <Image
+          source={{
+            uri:
+              currentUser?.profilePicture || "https://ui-avatars.com/api/?name=User",
+          }}
+          className="w-12 h-12 rounded-full mr-3"
+        />
         <View className="flex-1">
           <TextInput
             className="text-gray-900 text-lg"
@@ -46,7 +59,11 @@ const PostComposer = () => {
               className="absolute top-2 right-2 w-8 h-8 bg-black bg-opacity-60 rounded-full items-center justify-center"
               onPress={removeImage}
             >
-              <Feather name="x" size={16} color="white" />
+              <Feather
+                name="x"
+                size={16}
+                color="white"
+              />
             </TouchableOpacity>
           </View>
         </View>
@@ -54,11 +71,25 @@ const PostComposer = () => {
 
       <View className="flex-row justify-between items-center mt-3">
         <View className="flex-row">
-          <TouchableOpacity className="mr-4" onPress={pickImageFromGallery}>
-            <Feather name="image" size={20} color="#1DA1F2" />
+          <TouchableOpacity
+            className="mr-4"
+            onPress={pickImageFromGallery}
+          >
+            <Feather
+              name="image"
+              size={20}
+              color="#1DA1F2"
+            />
           </TouchableOpacity>
-          <TouchableOpacity className="mr-4" onPress={takePhoto}>
-            <Feather name="camera" size={20} color="#1DA1F2" />
+          <TouchableOpacity
+            className="mr-4"
+            onPress={takePhoto}
+          >
+            <Feather
+              name="camera"
+              size={20}
+              color="#1DA1F2"
+            />
           </TouchableOpacity>
         </View>
 
@@ -79,7 +110,10 @@ const PostComposer = () => {
             disabled={isCreating || !(content.trim() || selectedImage)}
           >
             {isCreating ? (
-              <ActivityIndicator size="small" color="white" />
+              <ActivityIndicator
+                size="small"
+                color="white"
+              />
             ) : (
               <Text
                 className={`font-semibold ${

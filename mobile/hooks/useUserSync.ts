@@ -1,10 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { useAuth } from "@clerk/clerk-expo";
-import { useApiClient, userApi } from "../utils/api";
+import { getAuthToken, useApiClient, userApi } from "../utils/api";
 
 export const useUserSync = () => {
-  const { isSignedIn } = useAuth();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const api = useApiClient();
 
   const syncUserMutation = useMutation({
@@ -19,13 +18,20 @@ export const useUserSync = () => {
     },
   });
 
-  // auto-sync user when signed in
   useEffect(() => {
-    // if user is signed in and user is not synced yet, sync user
-    if (isSignedIn && !syncUserMutation.data) {
+    const checkAuth = async () => {
+      const token = await getAuthToken();
+      setIsAuthenticated(Boolean(token));
+    };
+
+    checkAuth();
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated && !syncUserMutation.data) {
       syncUserMutation.mutate();
     }
-  }, [isSignedIn]);
+  }, [isAuthenticated, syncUserMutation.data]);
 
   return null;
 };

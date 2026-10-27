@@ -1,54 +1,71 @@
 import { Server } from "socket.io";
 import { socketAuthMiddleware } from "../middleware/socket.middleware.js";
-// import { getUserConversationsForSocketIO } from "../controllers/conversation.controller.js";
 
-let io;
+export let io;
 
-// userId (string) -> Set<socketId>  (1 user có thể đăng nhập nhiều thiết bị)
+// userId -> Set(socketId), hỗ trợ nhiều thiết bị
 const onlineUsers = new Map();
 
 export const initSocket = (httpServer) => {
+  if (io) {
+    return io;
+  }
+
   io = new Server(httpServer, {
     cors: {
-      // React Native không gửi Origin nên không bị CORS chặn;
-      // dòng này chỉ cần nếu bạn có thêm bản web
       origin: "*",
+      credentials: true,
     },
   });
 
+  // Xác thực JWT trước khi cho phép kết nối
   io.use(socketAuthMiddleware);
 
-  io.on("connection", async (socket) => {
+  io.on("connection", (socket) => {
     const user = socket.user;
-    const userId = user._id.toString();
+    const userId = String(user._id);
 
     console.log(`${user.username} online với socket ${socket.id}`);
 
-    // Lưu socket của user
-    if (!onlineUsers.has(userId)) onlineUsers.set(userId, new Set());
+    // Một user có thể có nhiều socket
+    if (!onlineUsers.has(userId)) {
+      onlineUsers.set(userId, new Set());
+    }
+
     onlineUsers.get(userId).add(socket.id);
 
-    io.emit("online-users", Array.from(onlineUsers.keys()));
-
-    // Room riêng của user: dùng gửi notification, tin nhắn, v.v.
+    // Room riêng của user
     socket.join(userId);
 
-    // Khi làm chat, bật lại đoạn này:
-    // const conversationIds = await getUserConversationsForSocketIO(userId);
-    // conversationIds.forEach((id) => socket.join(id.toString()));
+    // Thông báo danh sách user đang online
+    io.emit("online-users", Array.from(onlineUsers.keys()));
 
+    // Tham gia room conversation
     socket.on("join-conversation", (conversationId) => {
+      if (typeof conversationId !== "string" || !conversationId.trim()) {
+        return;
+      }
+
+      // Lưu ý: cần kiểm tra user có phải thành viên
+      // conversation trước khi cho phép join room.
       socket.join(conversationId);
     });
 
     socket.on("disconnect", () => {
       const sockets = onlineUsers.get(userId);
+
       if (sockets) {
         sockets.delete(socket.id);
-        // Chỉ offline khi không còn thiết bị nào
-        if (sockets.size === 0) onlineUsers.delete(userId);
+
+        // Chỉ offline khi tất cả thiết bị đã ngắt kết nối
+        if (sockets.size === 0) {
+          onlineUsers.delete(userId);
+        }
       }
+
       io.emit("online-users", Array.from(onlineUsers.keys()));
+
+      console.log(`Socket disconnected: ${socket.id}`);
     });
   });
 
@@ -56,6 +73,9 @@ export const initSocket = (httpServer) => {
 };
 
 export const getIO = () => {
-  if (!io) throw new Error("Socket.IO chưa được khởi tạo");
+  if (!io) {
+    throw new Error("Socket.IO chưa được khởi tạo");
+  }
+
   return io;
 };

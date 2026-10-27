@@ -9,6 +9,9 @@ import userRoutes from "./routes/user.route.js";
 import postRoutes from "./routes/post.route.js";
 import commentRoutes from "./routes/comment.route.js";
 import notificationRoutes from "./routes/notification.route.js";
+import conversationRoutes from "./routes/conversation.route.js";
+import messageRoutes from "./routes/message.route.js";
+import friendRoutes from "./routes/friend.route.js";
 
 import { ENV } from "./config/env.js";
 import { connectDB } from "./config/db.js";
@@ -35,6 +38,9 @@ app.use("/api/users", userRoutes);
 app.use("/api/posts", postRoutes);
 app.use("/api/comments", commentRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/conversations", conversationRoutes);
+app.use("/api/messages", messageRoutes);
+app.use("/api/friends", friendRoutes);
 
 // Apply the protectRoute middleware to all routes below this line
 // app.use("/api/friends", friendRoute);
@@ -48,12 +54,11 @@ app.use((err, req, res, next) => {
 });
 
 const httpServer = http.createServer(app);
-initSocket(httpServer);
 
 const startServer = async () => {
   try {
     await connectDB();
-
+    initSocket(httpServer);
     if (ENV.NODE_ENV !== "production") {
       httpServer.listen(ENV.PORT, () =>
         console.log("Server is up and running on PORT:", ENV.PORT),

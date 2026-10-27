@@ -1,12 +1,25 @@
 import axios, { AxiosInstance } from "axios";
-import { useAuth } from "@clerk/clerk-expo";
+import * as SecureStore from "expo-secure-store";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || "https://x-clone-rn.vercel.app/api";
+const API_BASE_URL =
+  process.env.EXPO_PUBLIC_API_URL || "https://x-clone-rn.vercel.app/api";
+const AUTH_TOKEN_KEY = "authToken";
 // ! 🔥 localhost api would not work on your actual physical device
 // const API_BASE_URL = "http://localhost:5001/api";
 
+export const getAuthToken = (): Promise<string | null> =>
+  SecureStore.getItemAsync(AUTH_TOKEN_KEY);
+
+export const saveAuthToken = (token: string): Promise<void> =>
+  SecureStore.setItemAsync(AUTH_TOKEN_KEY, token);
+
+export const clearAuthToken = (): Promise<void> =>
+  SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
+
 // this will basically create an authenticated api, pass the token into our headers
-export const createApiClient = (getToken: () => Promise<string | null>): AxiosInstance => {
+export const createApiClient = (
+  getToken: () => Promise<string | null>,
+): AxiosInstance => {
   const api = axios.create({ baseURL: API_BASE_URL });
 
   api.interceptors.request.use(async (config) => {
@@ -21,8 +34,19 @@ export const createApiClient = (getToken: () => Promise<string | null>): AxiosIn
 };
 
 export const useApiClient = (): AxiosInstance => {
-  const { getToken } = useAuth();
-  return createApiClient(getToken);
+  return createApiClient(getAuthToken);
+};
+
+export const authApi = {
+  signUp: (payload: {
+    username: string;
+    password: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  }) => axios.post(`${API_BASE_URL}/auth/signup`, payload),
+  signIn: (payload: { username: string; password: string }) =>
+    axios.post(`${API_BASE_URL}/auth/signin`, payload),
 };
 
 export const userApi = {
@@ -35,8 +59,10 @@ export const postApi = {
   createPost: (api: AxiosInstance, data: { content: string; image?: string }) =>
     api.post("/posts", data),
   getPosts: (api: AxiosInstance) => api.get("/posts"),
-  getUserPosts: (api: AxiosInstance, username: string) => api.get(`/posts/user/${username}`),
-  likePost: (api: AxiosInstance, postId: string) => api.post(`/posts/${postId}/like`),
+  getUserPosts: (api: AxiosInstance, username: string) =>
+    api.get(`/posts/user/${username}`),
+  likePost: (api: AxiosInstance, postId: string) =>
+    api.post(`/posts/${postId}/like`),
   deletePost: (api: AxiosInstance, postId: string) => api.delete(`/posts/${postId}`),
 };
 

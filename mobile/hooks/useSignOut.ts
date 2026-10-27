@@ -1,16 +1,18 @@
-import { useClerk } from "@clerk/clerk-expo";
 import { Alert } from "react-native";
+import { router } from "expo-router";
+import { clearAuthToken } from "../utils/api";
 
 export const useSignOut = () => {
-  const { signOut } = useClerk();
-
   const handleSignOut = () => {
     Alert.alert("Logout", "Are you sure you want to logout?", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Logout",
         style: "destructive",
-        onPress: () => signOut(),
+        onPress: async () => {
+          await clearAuthToken();
+          router.replace("/(auth)/login");
+        },
       },
     ]);
   };
