@@ -13,11 +13,11 @@ const getPasswordHash = (user) => user?.hashedPassword || user?.password || "";
 
 export const signUp = async (req, res) => {
   try {
-    const { username, password, email, firstName, lastName } = req.body;
+    const { username, password, email, displayName } = req.body;
 
-    if (!username || !password || !email || !firstName || !lastName) {
+    if (!username || !password || !email || !displayName) {
       return res.status(400).json({
-        message: "Username, password, email, firstName, and lastName are required",
+        message: "Username, password, email, and displayName are required",
       });
     }
 
@@ -35,8 +35,7 @@ export const signUp = async (req, res) => {
       username,
       hashedPassword,
       email,
-      firstName,
-      lastName,
+      displayName,
       profilePicture: "",
     });
 
@@ -90,7 +89,7 @@ export const signIn = async (req, res) => {
     });
 
     return res.status(200).json({
-      message: `Welcome ${user.firstName} ${user.lastName}`,
+      message: `Welcome ${user.displayName}`,
       accessToken,
       user,
     });

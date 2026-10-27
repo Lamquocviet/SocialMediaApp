@@ -46,7 +46,6 @@ Trước khi chạy dự án, hãy chuẩn bị:
 - Node.js và npm.
 - Git.
 - Tài khoản MongoDB hoặc MongoDB Atlas.
-- Tài khoản Clerk để cấu hình xác thực.
 - Tài khoản Cloudinary để lưu trữ hình ảnh.
 - Tài khoản Arcjet để cấu hình các tính năng bảo mật.
 - Expo Go trên điện thoại hoặc trình giả lập Android/iOS phù hợp.
@@ -59,8 +58,9 @@ Tạo file `.env` trong thư mục `backend`:
 PORT=5001
 NODE_ENV=development
 
-CLERK_PUBLISHABLE_KEY=<your_clerk_publishable_key>
-CLERK_SECRET_KEY=<your_clerk_secret_key>
+JWT_SECRET=<your secretkey>
+JWT_EXPIRES_IN=1h
+JWT_REFRESH_EXPIRES_IN=7d
 
 MONGO_URI=<your_mongodb_connection_uri>
 
@@ -85,7 +85,7 @@ EXPO_PUBLIC_API_URL=<your_backend_api_url>
 - Thay các giá trị mẫu bằng thông tin cấu hình thực tế của bạn.
 - Với Android Emulator, địa chỉ backend thường là `http://10.0.2.2:5001`; với iOS Simulator có thể sử dụng `http://localhost:5001`.
 - Khi chạy trên điện thoại thật, hãy sử dụng địa chỉ IP nội bộ của máy tính đang chạy backend, hoặc URL backend đã triển khai.
-- Không đưa các khóa bí mật như `CLERK_SECRET_KEY`, `ARCJET_KEY` và thông tin xác thực Cloudinary lên GitHub.
+- Không đưa các khóa bí mật như `SECRET_KEY`, `ARCJET_KEY` và thông tin xác thực Cloudinary lên GitHub.
 - Các biến bắt đầu bằng `EXPO_PUBLIC_` có thể được đưa vào ứng dụng phía client, vì vậy không được đặt secret key trong những biến này.
 
 ## 🚀 Cài đặt và chạy dự án
@@ -149,7 +149,7 @@ _Lưu ý: Cấu trúc trên mang tính minh họa. Tên thư mục thực tế c
 
 ## 🔒 Bảo mật
 
-- Sử dụng Clerk để xác thực người dùng.
+- Sử dụng JWT để xác thực người dùng.
 - Sử dụng Arcjet để hỗ trợ phát hiện bot và giới hạn yêu cầu theo cấu hình.
 - Quản lý thông tin nhạy cảm bằng biến môi trường.
 - Không công khai các khóa API hoặc thông tin kết nối cơ sở dữ liệu.

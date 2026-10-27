@@ -42,11 +42,6 @@ app.use("/api/conversations", conversationRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/friends", friendRoutes);
 
-// Apply the protectRoute middleware to all routes below this line
-// app.use("/api/friends", friendRoute);
-// app.use("/api/conversations", conversationRoute);
-// app.use("/api/messages", messageRoute);
-
 // error handling middleware
 app.use((err, req, res, next) => {
   console.error("Unhandled error:", err);
