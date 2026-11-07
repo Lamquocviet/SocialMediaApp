@@ -10,8 +10,7 @@ export const useProfile = () => {
   const queryClient = useQueryClient();
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
+    displayName: "",
     bio: "",
     location: "",
   });
@@ -25,15 +24,17 @@ export const useProfile = () => {
       Alert.alert("Success", "Profile updated successfully!");
     },
     onError: (error: any) => {
-      Alert.alert("Error", error.response?.data?.error || "Failed to update profile");
+      Alert.alert(
+        "Error",
+        error.response?.data?.error || "Failed to update profile",
+      );
     },
   });
 
   const openEditModal = () => {
     if (currentUser) {
       setFormData({
-        firstName: currentUser.firstName || "",
-        lastName: currentUser.lastName || "",
+        displayName: currentUser.displayName || "",
         bio: currentUser.bio || "",
         location: currentUser.location || "",
       });

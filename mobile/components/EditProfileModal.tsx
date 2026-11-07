@@ -12,8 +12,7 @@ interface EditProfileModalProps {
   isVisible: boolean;
   onClose: () => void;
   formData: {
-    firstName: string;
-    lastName: string;
+    displayName: string;
     bio: string;
     location: string;
   };
@@ -36,7 +35,11 @@ const EditProfileModal = ({
   };
 
   return (
-    <Modal visible={isVisible} animationType="slide" presentationStyle="pageSheet">
+    <Modal
+      visible={isVisible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+    >
       <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-100">
         <TouchableOpacity onPress={onClose}>
           <Text className="text-blue-500 text-lg">Cancel</Text>
@@ -50,7 +53,10 @@ const EditProfileModal = ({
           className={`${isUpdating ? "opacity-50" : ""}`}
         >
           {isUpdating ? (
-            <ActivityIndicator size="small" color="#1DA1F2" />
+            <ActivityIndicator
+              size="small"
+              color="#1DA1F2"
+            />
           ) : (
             <Text className="text-blue-500 text-lg font-semibold">Save</Text>
           )}
@@ -60,16 +66,16 @@ const EditProfileModal = ({
       <ScrollView className="flex-1 px-4 py-6">
         <View className="space-y-4">
           <View>
-            <Text className="text-gray-500 text-sm mb-2">First Name</Text>
+            <Text className="text-gray-500 text-sm mb-2">Display Name</Text>
             <TextInput
               className="border border-gray-200 rounded-lg p-3 text-base"
-              value={formData.firstName}
-              onChangeText={(text) => updateFormField("firstName", text)}
-              placeholder="Your first name"
+              value={formData.displayName}
+              onChangeText={(text) => updateFormField("displayName", text)}
+              placeholder="Your display name"
             />
           </View>
 
-          <View>
+          {/* <View>
             <Text className="text-gray-500 text-sm mb-2">Last Name</Text>
             <TextInput
               className="border border-gray-200 rounded-lg px-3 py-3 text-base"
@@ -77,7 +83,7 @@ const EditProfileModal = ({
               onChangeText={(text) => updateFormField("lastName", text)}
               placeholder="Your last name"
             />
-          </View>
+          </View> */}
 
           <View>
             <Text className="text-gray-500 text-sm mb-2">Bio</Text>

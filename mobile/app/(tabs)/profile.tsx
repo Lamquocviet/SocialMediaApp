@@ -41,18 +41,24 @@ const ProfileScreens = () => {
   if (isLoading) {
     return (
       <View className="flex-1 bg-white items-center justify-center">
-        <ActivityIndicator size="large" color="#1DA1F2" />
+        <ActivityIndicator
+          size="large"
+          color="#1DA1F2"
+        />
       </View>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
+    <SafeAreaView
+      className="flex-1 bg-white"
+      edges={["top"]}
+    >
       {/* Header */}
       <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-100">
         <View>
           <Text className="text-xl font-bold text-gray-900">
-            {currentUser.firstName} {currentUser.lastName}
+            {currentUser.displayName}
           </Text>
           <Text className="text-gray-500 text-sm">{userPosts.length} Posts</Text>
         </View>
@@ -101,20 +107,32 @@ const ProfileScreens = () => {
           <View className="mb-4">
             <View className="flex-row items-center mb-1">
               <Text className="text-xl font-bold text-gray-900 mr-1">
-                {currentUser.firstName} {currentUser.lastName}
+                {currentUser.displayName}
               </Text>
-              <Feather name="check-circle" size={20} color="#1DA1F2" />
+              <Feather
+                name="check-circle"
+                size={20}
+                color="#1DA1F2"
+              />
             </View>
             <Text className="text-gray-500 mb-2">@{currentUser.username}</Text>
             <Text className="text-gray-900 mb-3">{currentUser.bio}</Text>
 
             <View className="flex-row items-center mb-2">
-              <Feather name="map-pin" size={16} color="#657786" />
+              <Feather
+                name="map-pin"
+                size={16}
+                color="#657786"
+              />
               <Text className="text-gray-500 ml-2">{currentUser.location}</Text>
             </View>
 
             <View className="flex-row items-center mb-3">
-              <Feather name="calendar" size={16} color="#657786" />
+              <Feather
+                name="calendar"
+                size={16}
+                color="#657786"
+              />
               <Text className="text-gray-500 ml-2">
                 Joined {format(new Date(currentUser.createdAt), "MMMM yyyy")}
               </Text>

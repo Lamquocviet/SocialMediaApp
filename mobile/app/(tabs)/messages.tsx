@@ -1,224 +1,324 @@
-import { CONVERSATIONS, ConversationType } from "@/data/conversations";
-import { Feather } from "@expo/vector-icons";
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
-  Alert,
-  TouchableOpacity,
+  Image,
   TextInput,
   ScrollView,
-  Image,
-  Modal,
+  TouchableOpacity,
+  StyleSheet,
 } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import DirectMessage from "@/components/chatComponent/DirectMessage";
+import GroupMessage from "@/components/chatComponent/GroupMessage";
+import ActiveUserItem from "@/components/chatComponent/ActiveUserItem";
+import { useRouter } from "expo-router";
 
-const MessagesScreen = () => {
-  const insets = useSafeAreaInsets();
-  const [searchText, setSearchText] = useState("");
-  const [conversationsList, setConversationsList] = useState(CONVERSATIONS);
-  const [selectedConversation, setSelectedConversation] = useState<ConversationType | null>(null);
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const [newMessage, setNewMessage] = useState("");
+type ActiveUser = {
+  id: string;
+  name: string;
+  avatar?: string;
+  isMe?: boolean;
+  ring?: boolean;
+  online?: boolean;
+};
 
-  const deleteConversation = (conversationId: number) => {
-    Alert.alert("Delete Conversation", "Are you sure you want to delete this conversation?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: () => {
-          setConversationsList((prev) => prev.filter((conv) => conv.id !== conversationId));
-        },
-      },
-    ]);
-  };
+const COLORS = {
+  primary: "#5B4BDB",
+  primarySoft: "#EEEBFF",
+  bg: "#F4F5FA",
+  card: "#FFFFFF",
+  text: "#1B1B2F",
+  sub: "#6B7280",
+  border: "#E5E7EB",
+  online: "#22C55E",
+};
 
-  const openConversation = (conversation: ConversationType) => {
-    setSelectedConversation(conversation);
-    setIsChatOpen(true);
-  };
+const ACTIVE_USERS: ActiveUser[] = [
+  { id: "me", name: "Bạn", isMe: true },
+  {
+    id: "1",
+    name: "Lan Anh",
+    avatar: "https://i.pravatar.cc/150?img=47",
+    ring: true,
+    online: true,
+  },
+  {
+    id: "2",
+    name: "Quốc Bảo",
+    avatar: "https://i.pravatar.cc/150?img=12",
+    online: true,
+  },
+  {
+    id: "3",
+    name: "Thảo My",
+    avatar: "https://i.pravatar.cc/150?img=32",
+    online: true,
+  },
+  {
+    id: "4",
+    name: "Tuấn Kiệt",
+    avatar: "https://i.pravatar.cc/150?img=15",
+    online: true,
+  },
+];
+const TABS = [
+  { key: "all", label: "Tất cả" },
+  { key: "direct", label: "Cá nhân" },
+  { key: "group", label: "Nhóm" },
+];
 
-  const closeChatModal = () => {
-    setIsChatOpen(false);
-    setSelectedConversation(null);
-    setNewMessage("");
-  };
+export default function ChatListScreen() {
+  const [activeTab, setActiveTab] = useState("all");
+  const [query, setQuery] = useState("");
+  const router = useRouter();
 
-  const sendMessage = () => {
-    if (newMessage.trim() && selectedConversation) {
-      // update last message in conversation
-      setConversationsList((prev) =>
-        prev.map((conv) =>
-          conv.id === selectedConversation.id
-            ? { ...conv, lastMessage: newMessage, time: "now" }
-            : conv
-        )
-      );
-      setNewMessage("");
-      Alert.alert(
-        "Message Sent!",
-        `Your message has been sent to ${selectedConversation.user.name}`
-      );
-    }
-  };
-
-  return (
-    <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
-      {/* HEADER */}
-      <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-100">
-        <Text className="text-xl font-bold text-gray-900">Messages</Text>
+  const Header = (
+    <View>
+      {/* Đang hoạt động */}
+      <View style={styles.sectionHeader}>
+        <View style={styles.sectionTitleWrap}>
+          <Text style={styles.sectionTitle}>Đang hoạt động</Text>
+          <View style={styles.titleDot} />
+        </View>
         <TouchableOpacity>
-          <Feather name="edit" size={24} color="#1DA1F2" />
+          <Text style={styles.seeAll}>Xem tất cả</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Search Bar */}
-      <View className="px-4 py-3 border-b border-gray-100">
-        <View className="flex-row items-center bg-gray-100 rounded-full px-4 py-3">
-          <Feather name="search" size={20} color="#657786" />
-          <TextInput
-            placeholder="Search for people and groups"
-            className="flex-1 ml-3 text-base"
-            placeholderTextColor="#657786"
-            value={searchText}
-            onChangeText={setSearchText}
-          />
-        </View>
-      </View>
-
-      {/* CONVERSATIONS LIST */}
       <ScrollView
-        className="flex-1"
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 + insets.bottom }}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.activeList}
       >
-        {conversationsList.map((conversation) => (
-          <TouchableOpacity
-            key={conversation.id}
-            className="flex-row items-center p-4 border-b border-gray-50 active:bg-gray-50"
-            onPress={() => openConversation(conversation)}
-            onLongPress={() => deleteConversation(conversation.id)}
-          >
-            <Image
-              source={{ uri: conversation.user.avatar }}
-              className="size-12 rounded-full mr-3"
-            />
+        {ACTIVE_USERS.map((u) => (
+          <ActiveUserItem
+            key={u.id}
+            user={u}
+            onPress={() => {
+              if (u.isMe) return;
 
-            <View className="flex-1">
-              <View className="flex-row items-center justify-between mb-1">
-                <View className="flex-row items-center gap-1">
-                  <Text className="font-semibold text-gray-900">{conversation.user.name}</Text>
-                  {conversation.user.verified && (
-                    <Feather name="check-circle" size={16} color="#1DA1F2" className="ml-1" />
-                  )}
-                  <Text className="text-gray-500 text-sm ml-1">@{conversation.user.username}</Text>
-                </View>
-                <Text className="text-gray-500 text-sm">{conversation.time}</Text>
-              </View>
-              <Text className="text-sm text-gray-500" numberOfLines={1}>
-                {conversation.lastMessage}
-              </Text>
-            </View>
-          </TouchableOpacity>
+              router.push({
+                pathname: "/chat/[id]",
+                params: {
+                  id: u.id,
+                  type: "direct",
+                  name: u.name,
+                  avatar: u.avatar ?? "",
+                },
+              });
+            }}
+          />
         ))}
       </ScrollView>
 
-      {/* Quick Actions */}
-      <View className="px-4 py-2 border-t border-gray-100 bg-gray-50">
-        <Text className="text-xs text-gray-500 text-center">
-          Tap to open • Long press to delete
-        </Text>
+      {/* Search */}
+      <View style={styles.searchBox}>
+        <Ionicons
+          name="search"
+          size={18}
+          color={COLORS.sub}
+        />
+        <TextInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Tìm kiếm người dùng, cuộc trò chuyện..."
+          placeholderTextColor={COLORS.sub}
+          style={styles.searchInput}
+        />
+        <TouchableOpacity>
+          <Ionicons
+            name="options-outline"
+            size={20}
+            color={COLORS.sub}
+          />
+        </TouchableOpacity>
       </View>
 
-      <Modal visible={isChatOpen} animationType="slide" presentationStyle="pageSheet">
-        {selectedConversation && (
-          <SafeAreaView className="flex-1">
-            {/* Chat Header */}
-            <View className="flex-row items-center px-4 py-3 border-b border-gray-100">
-              <TouchableOpacity onPress={closeChatModal} className="mr-3">
-                <Feather name="arrow-left" size={24} color="#1DA1F2" />
-              </TouchableOpacity>
-              <Image
-                source={{ uri: selectedConversation.user.avatar }}
-                className="size-10 rounded-full mr-3"
-              />
-              <View className="flex-1">
-                <View className="flex-row items-center">
-                  <Text className="font-semibold text-gray-900 mr-1">
-                    {selectedConversation.user.name}
-                  </Text>
-                  {selectedConversation.user.verified && (
-                    <Feather name="check-circle" size={16} color="#1DA1F2" />
-                  )}
-                </View>
-                <Text className="text-gray-500 text-sm">@{selectedConversation.user.username}</Text>
-              </View>
-            </View>
+      {/* Filter tabs */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.tabList}
+      >
+        {TABS.map((tab) => {
+          const active = activeTab === tab.key;
 
-            {/* Chat Messages Area */}
-            <ScrollView className="flex-1 px-4 py-4">
-              <View className="mb-4">
-                <Text className="text-center text-gray-400 text-sm mb-4">
-                  This is the beginning of your conversation with {selectedConversation.user.name}
-                </Text>
+          return (
+            <TouchableOpacity
+              key={tab.key}
+              onPress={() => setActiveTab(tab.key)}
+              style={[styles.tabChip, active && styles.tabChipActive]}
+            >
+              <Text style={[styles.tabText, active && styles.tabTextActive]}>
+                {tab.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+    </View>
+  );
 
-                {/* Conversation Messages */}
-                {selectedConversation.messages.map((message) => (
-                  <View
-                    key={message.id}
-                    className={`flex-row mb-3 ${message.fromUser ? "justify-end" : ""}`}
-                  >
-                    {!message.fromUser && (
-                      <Image
-                        source={{ uri: selectedConversation.user.avatar }}
-                        className="size-8 rounded-full mr-2"
-                      />
-                    )}
-                    <View className={`flex-1 ${message.fromUser ? "items-end" : ""}`}>
-                      <View
-                        className={`rounded-2xl px-4 py-3 max-w-xs ${
-                          message.fromUser ? "bg-blue-500" : "bg-gray-100"
-                        }`}
-                      >
-                        <Text className={message.fromUser ? "text-white" : "text-gray-900"}>
-                          {message.text}
-                        </Text>
-                      </View>
-                      <Text className="text-xs text-gray-400 mt-1">{message.time}</Text>
-                    </View>
+  return (
+    <SafeAreaView
+      style={styles.safe}
+      edges={["top", "bottom"]}
+    >
+      <View style={styles.container}>
+        {Header}
+
+        <View style={styles.container}>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            {activeTab === "all" && (
+              <>
+                <Text style={styles.listTitle}>Tất cả</Text>
+
+                <View style={styles.listSection}>
+                  <View style={styles.listHeader}>
+                    <Text style={styles.listSectionTitle}>Tin nhắn cá nhân</Text>
+                    <Text style={styles.countBadge}>2 cuộc trò chuyện</Text>
                   </View>
-                ))}
-              </View>
-            </ScrollView>
 
-            {/* Message Input */}
-            <View className="flex-row items-center px-4 py-3 border-t border-gray-100">
-              <View className="flex-1 flex-row items-center bg-gray-100 rounded-full px-4 py-3 mr-3">
-                <TextInput
-                  className="flex-1 text-base"
-                  placeholder="Start a message..."
-                  placeholderTextColor="#657786"
-                  value={newMessage}
-                  onChangeText={setNewMessage}
-                  multiline
-                />
-              </View>
-              <TouchableOpacity
-                onPress={sendMessage}
-                className={`size-10 rounded-full items-center justify-center ${
-                  newMessage.trim() ? "bg-blue-500" : "bg-gray-300"
-                }`}
-                disabled={!newMessage.trim()}
-              >
-                <Feather name="send" size={20} color="white" />
-              </TouchableOpacity>
-            </View>
-          </SafeAreaView>
-        )}
-      </Modal>
+                  <DirectMessage />
+                </View>
+
+                <View style={styles.listSection}>
+                  <View style={styles.listHeader}>
+                    <Text style={styles.listSectionTitle}>Tin nhắn nhóm</Text>
+                    <Text style={styles.countBadge}>3 nhóm</Text>
+                  </View>
+
+                  <GroupMessage />
+                </View>
+              </>
+            )}
+
+            {activeTab === "direct" && (
+              <>
+                <Text style={styles.listTitle}>Tin nhắn cá nhân</Text>
+                <DirectMessage />
+              </>
+            )}
+
+            {activeTab === "group" && (
+              <>
+                <Text style={styles.listTitle}>Tin nhắn nhóm</Text>
+                <GroupMessage />
+              </>
+            )}
+          </ScrollView>
+        </View>
+      </View>
     </SafeAreaView>
   );
-};
+}
 
-export default MessagesScreen;
+// Styles
+
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: COLORS.bg },
+  container: { flex: 1 },
+
+  /* Section header */
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+  sectionTitleWrap: { flexDirection: "row", alignItems: "center" },
+  sectionTitle: { fontSize: 13, fontWeight: "600", color: COLORS.text },
+  titleDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: COLORS.online,
+    marginLeft: 6,
+  },
+  seeAll: { fontSize: 12, fontWeight: "600", color: COLORS.primary },
+
+  /* Active users */
+  activeList: { paddingHorizontal: 16, paddingVertical: 12, gap: 14 },
+
+  /* Search */
+  searchBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.card,
+    borderRadius: 14,
+    marginHorizontal: 16,
+    paddingHorizontal: 12,
+    height: 44,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  searchInput: { flex: 1, marginHorizontal: 8, fontSize: 13, color: COLORS.text },
+
+  /* Tabs */
+  tabList: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 8,
+  },
+
+  tabChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 16,
+    backgroundColor: COLORS.primarySoft,
+  },
+
+  tabChipActive: {
+    backgroundColor: COLORS.primary,
+  },
+
+  tabText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: COLORS.primary,
+  },
+
+  tabTextActive: {
+    color: "#FFFFFF",
+  },
+  listTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: COLORS.text,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
+
+  listSection: {
+    paddingHorizontal: 16,
+    paddingTop: 0,
+    paddingBottom: 0,
+  },
+
+  listHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+
+  listSectionTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: COLORS.text,
+  },
+
+  countBadge: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: COLORS.text,
+    backgroundColor: "#EEEEEE",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+});

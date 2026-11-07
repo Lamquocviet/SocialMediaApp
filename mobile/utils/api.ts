@@ -1,11 +1,9 @@
 import axios, { AxiosInstance } from "axios";
 import * as SecureStore from "expo-secure-store";
 
-const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL || "https://x-clone-rn.vercel.app/api";
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 const AUTH_TOKEN_KEY = "authToken";
 // ! 🔥 localhost api would not work on your actual physical device
-// const API_BASE_URL = "http://localhost:5001/api";
 
 export const getAuthToken = (): Promise<string | null> =>
   SecureStore.getItemAsync(AUTH_TOKEN_KEY);
@@ -42,8 +40,7 @@ export const authApi = {
     username: string;
     password: string;
     email: string;
-    firstName: string;
-    lastName: string;
+    displayName: string;
   }) => axios.post(`${API_BASE_URL}/auth/signup`, payload),
   signIn: (payload: { username: string; password: string }) =>
     axios.post(`${API_BASE_URL}/auth/signin`, payload),

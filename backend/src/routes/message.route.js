@@ -12,6 +12,6 @@ import {
 const router = express.Router();
 
 router.post("/direct", checkFriendship, sendDirectMessage);
-router.post("/group", checkGroupMembership, sendGroupMessage);
+router.post("/group", checkFriendship, sendGroupMessage);
 
 export default router;

@@ -14,8 +14,7 @@ import { router } from "expo-router";
 import { authApi, saveAuthToken } from "@/utils/api";
 
 const initialForm = {
-  firstName: "",
-  lastName: "",
+  displayName: "",
   username: "",
   email: "",
   password: "",
@@ -39,8 +38,7 @@ export default function AuthScreen() {
       }
     } else {
       if (
-        !form.firstName.trim() ||
-        !form.lastName.trim() ||
+        !form.displayName.trim() ||
         !form.username.trim() ||
         !form.email.trim() ||
         !form.password.trim()
@@ -61,8 +59,7 @@ export default function AuthScreen() {
           username: form.username.trim(),
           password: form.password,
           email: form.email.trim(),
-          firstName: form.firstName.trim(),
-          lastName: form.lastName.trim(),
+          displayName: form.displayName.trim(),
         });
 
         const loginRes = await authApi.signIn({
@@ -86,10 +83,21 @@ export default function AuthScreen() {
       await saveAuthToken(res.data.accessToken);
       router.replace("/(tabs)");
     } catch (error: any) {
+      console.log("========== LOGIN ERROR ==========");
+
+      console.log("Message:", error.message);
+      console.log("Code:", error.code);
+      console.log("Status:", error.response?.status);
+      console.log("Response:", error.response?.data);
+      console.log("URL:", error.config?.url);
+      console.log("Base URL:", error.config?.baseURL);
+
       const message =
-        error?.response?.data?.message ||
-        error?.response?.data?.error ||
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
         "Something went wrong. Please try again.";
+
       Alert.alert("Authentication failed", message);
     } finally {
       setLoading(false);
@@ -158,17 +166,17 @@ export default function AuthScreen() {
           {mode === "signup" && (
             <View className="flex-row gap-3 mb-3">
               <View className="flex-1">
-                <Text className="text-xs text-gray-500 mb-2">First name</Text>
+                <Text className="text-xs text-gray-500 mb-2">Display name</Text>
                 <TextInput
-                  value={form.firstName}
-                  onChangeText={(text) => updateField("firstName", text)}
+                  value={form.displayName}
+                  onChangeText={(text) => updateField("displayName", text)}
                   className="rounded-2xl border border-gray-200 bg-[#fafafa] px-4 py-3 text-sm text-gray-800"
                   placeholder="John"
                   placeholderTextColor="#9ca3af"
                 />
               </View>
 
-              <View className="flex-1">
+              {/* <View className="flex-1">
                 <Text className="text-xs text-gray-500 mb-2">Last name</Text>
                 <TextInput
                   value={form.lastName}
@@ -177,7 +185,7 @@ export default function AuthScreen() {
                   placeholder="Doe"
                   placeholderTextColor="#9ca3af"
                 />
-              </View>
+              </View> */}
             </View>
           )}
 
@@ -290,15 +298,6 @@ export default function AuthScreen() {
             <View className="flex-1 h-px bg-gray-200" />
             <Text className="mx-3 text-xs text-gray-400">or continue with</Text>
             <View className="flex-1 h-px bg-gray-200" />
-          </View>
-
-          <View className="flex-row gap-3">
-            <TouchableOpacity className="flex-1 rounded-2xl border border-gray-200 bg-white py-3 items-center">
-              <Text className="font-medium text-gray-700">Google</Text>
-            </TouchableOpacity>
-            <TouchableOpacity className="flex-1 rounded-2xl border border-gray-200 bg-white py-3 items-center">
-              <Text className="font-medium text-gray-700">Apple</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </View>

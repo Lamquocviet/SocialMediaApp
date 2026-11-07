@@ -1,8 +1,8 @@
-# SocialApp – Ứng dụng mạng xã hội đa nền tảng
+# 🚀 SocialApp – Ứng dụng mạng xã hội & Trò chuyện thời gian thực
 
-SocialApp là dự án xây dựng ứng dụng mạng xã hội lấy cảm hứng từ Twitter, sử dụng **React Native và Expo** cho giao diện di động, kết hợp với **Node.js, Express.js và MongoDB** cho backend.
+SocialApp là ứng dụng mạng xã hội đa nền tảng hiện đại, được xây dựng bằng **React Native (Expo)** cho giao diện di động, kết hợp với backend **Node.js, Express.js và MongoDB**.
 
-Dự án cung cấp các chức năng cơ bản của một nền tảng mạng xã hội, bao gồm đăng bài, chia sẻ hình ảnh, tương tác với bài viết, thông báo, nhắn tin và quản lý hồ sơ cá nhân. Hệ thống tích hợp Clerk để xác thực người dùng, Cloudinary để lưu trữ hình ảnh và Arcjet để tăng cường bảo mật.
+Ứng dụng cung cấp trải nghiệm kết nối toàn diện bao gồm bảng tin chia sẻ khoảnh khắc, kết bạn, trò chuyện 1-1 và trò chuyện nhóm thời gian thực qua **Socket.IO**. Hệ thống được tích hợp **JWT (JSON Web Token)** cho việc xác thực an toàn, **Cloudinary** để quản lý phương tiện và **Arcjet** để tối ưu bảo mật.
 
 ## 🎯 Mục tiêu dự án
 
@@ -15,11 +15,13 @@ Dự án cung cấp các chức năng cơ bản của một nền tảng mạng 
 
 ## ✨ Các chức năng chính
 
-- 🔐 **Xác thực người dùng:** Đăng nhập và quản lý phiên bằng Clerk, hỗ trợ các phương thức đăng nhập được cấu hình như Google và Apple.
+- 🔐 **Xác thực người dùng:** Đăng nhập và quản lý phiên bằng JWT.
 - 🏠 **Bảng tin:** Đăng bài viết dạng văn bản và hình ảnh từ thư viện hoặc camera.
 - ❤️ **Tương tác bài viết:** Thích và bình luận bài viết thông qua giao diện tương tác.
 - 🔔 **Thông báo:** Nhận thông báo khi có người thích hoặc bình luận bài viết.
-- 💬 **Tin nhắn:** Xem lịch sử tin nhắn và hỗ trợ xóa tin nhắn bằng thao tác nhấn giữ.
+- 👥 **Kết bạn:** Gửi, nhận và quản lý lời mời kết bạn cùng danh sách bạn bè.
+- 💬 **Nhắn tin 1-1:** Trò chuyện riêng tư giữa hai người dùng, hỗ trợ xóa tin nhắn bằng thao tác nhấn giữ.
+- 👨‍👩‍👧‍👦 **Trò chuyện nhóm:** Tạo nhóm chat, quản lý thành viên và chia sẻ tin nhắn trong nhóm.
 - 👤 **Hồ sơ cá nhân:** Xem và chỉnh sửa thông tin cá nhân.
 - 🔎 **Tìm kiếm:** Khám phá nội dung và các bài viết nổi bật.
 - 🚪 **Đăng xuất:** Kết thúc phiên đăng nhập và quay lại màn hình đăng nhập.
@@ -34,7 +36,7 @@ Dự án cung cấp các chức năng cơ bản của một nền tảng mạng 
 | Node.js      | Môi trường chạy backend                       |
 | Express.js   | Xây dựng REST API                             |
 | MongoDB      | Lưu trữ dữ liệu ứng dụng                      |
-| Clerk        | Xác thực và quản lý người dùng                |
+| JWT          | Xác thực và quản lý người dùng                |
 | Cloudinary   | Lưu trữ và phân phối hình ảnh                 |
 | Arcjet       | Hỗ trợ giới hạn yêu cầu và bảo vệ API         |
 | Git & GitHub | Quản lý mã nguồn và cộng tác phát triển       |
@@ -75,7 +77,6 @@ CLOUDINARY_API_SECRET=<your_cloudinary_api_secret>
 Tạo file `.env` trong thư mục `mobile`:
 
 ```env
-EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY=<your_clerk_publishable_key>
 
 EXPO_PUBLIC_API_URL=<your_backend_api_url>
 ```

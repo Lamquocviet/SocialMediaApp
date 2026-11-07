@@ -57,7 +57,7 @@ const TabsLayout = () => {
 
           tabBarIcon: ({ color, size }) => (
             <Feather
-              name="search"
+              name="users"
               size={size}
               color={color}
             />
@@ -78,20 +78,21 @@ const TabsLayout = () => {
           ),
         }}
       />
+
       <Tabs.Screen
         name="messages"
         options={{
           title: "",
-
           tabBarIcon: ({ color, size }) => (
             <Feather
-              name="mail"
+              name="message-circle"
               size={size}
               color={color}
             />
           ),
         }}
       />
+      {/* profile */}
       <Tabs.Screen
         name="profile"
         options={{

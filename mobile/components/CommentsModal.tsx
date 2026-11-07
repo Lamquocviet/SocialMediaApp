@@ -18,7 +18,8 @@ interface CommentsModalProps {
 }
 
 const CommentsModal = ({ selectedPost, onClose }: CommentsModalProps) => {
-  const { commentText, setCommentText, createComment, isCreatingComment } = useComments();
+  const { commentText, setCommentText, createComment, isCreatingComment } =
+    useComments();
   const { currentUser } = useCurrentUser();
 
   const handleClose = () => {
@@ -27,7 +28,11 @@ const CommentsModal = ({ selectedPost, onClose }: CommentsModalProps) => {
   };
 
   return (
-    <Modal visible={!!selectedPost} animationType="slide" presentationStyle="pageSheet">
+    <Modal
+      visible={!!selectedPost}
+      animationType="slide"
+      presentationStyle="pageSheet"
+    >
       {/* MODAL HEADER */}
       <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-100">
         <TouchableOpacity onPress={handleClose}>
@@ -50,9 +55,11 @@ const CommentsModal = ({ selectedPost, onClose }: CommentsModalProps) => {
               <View className="flex-1">
                 <View className="flex-row items-center mb-1">
                   <Text className="font-bold text-gray-900 mr-1">
-                    {selectedPost.user.firstName} {selectedPost.user.lastName}
+                    {selectedPost.user.displayName}
                   </Text>
-                  <Text className="text-gray-500 ml-1">@{selectedPost.user.username}</Text>
+                  <Text className="text-gray-500 ml-1">
+                    @{selectedPost.user.username}
+                  </Text>
                 </View>
 
                 {selectedPost.content && (
@@ -74,7 +81,10 @@ const CommentsModal = ({ selectedPost, onClose }: CommentsModalProps) => {
 
           {/* COMMENTS LIST */}
           {selectedPost.comments.map((comment) => (
-            <View key={comment._id} className="border-b border-gray-100 bg-white p-4">
+            <View
+              key={comment._id}
+              className="border-b border-gray-100 bg-white p-4"
+            >
               <View className="flex-row">
                 <Image
                   source={{ uri: comment.user.profilePicture }}
@@ -84,12 +94,16 @@ const CommentsModal = ({ selectedPost, onClose }: CommentsModalProps) => {
                 <View className="flex-1">
                   <View className="flex-row items-center mb-1">
                     <Text className="font-bold text-gray-900 mr-1">
-                      {comment.user.firstName} {comment.user.lastName}
+                      {comment.user.displayName}
                     </Text>
-                    <Text className="text-gray-500 text-sm ml-1">@{comment.user.username}</Text>
+                    <Text className="text-gray-500 text-sm ml-1">
+                      @{comment.user.username}
+                    </Text>
                   </View>
 
-                  <Text className="text-gray-900 text-base leading-5 mb-2">{comment.content}</Text>
+                  <Text className="text-gray-900 text-base leading-5 mb-2">
+                    {comment.content}
+                  </Text>
                 </View>
               </View>
             </View>
@@ -123,7 +137,10 @@ const CommentsModal = ({ selectedPost, onClose }: CommentsModalProps) => {
                   disabled={isCreatingComment || !commentText.trim()}
                 >
                   {isCreatingComment ? (
-                    <ActivityIndicator size={"small"} color={"white"} />
+                    <ActivityIndicator
+                      size={"small"}
+                      color={"white"}
+                    />
                   ) : (
                     <Text
                       className={`font-semibold ${
