@@ -12,7 +12,8 @@ export const usePosts = (username?: string) => {
     refetch,
   } = useQuery({
     queryKey: username ? ["userPosts", username] : ["posts"],
-    queryFn: () => (username ? postApi.getUserPosts(api, username) : postApi.getPosts(api)),
+    queryFn: () =>
+      username ? postApi.getUserPosts(api, username) : postApi.getPosts(api),
     select: (response) => response.data.posts,
   });
 

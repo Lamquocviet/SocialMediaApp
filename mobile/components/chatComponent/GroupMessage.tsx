@@ -156,7 +156,7 @@ export default function GroupMessage() {
 
 const styles = StyleSheet.create({
   container: {
-    gap: 10, // Khoảng cách giữa các item nhóm
+    gap: 10,
   },
   card: {
     flexDirection: "row",

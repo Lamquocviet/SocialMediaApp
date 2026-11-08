@@ -13,25 +13,12 @@ const messageSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    type: {
-      type: String,
-      enum: ["text", "image", "file"],
-      default: "text",
-    },
     content: {
       type: String,
       trim: true,
     },
-    attachments: {
-      type: [
-        {
-          url: String,
-          filename: String,
-          mimetype: String,
-          size: Number,
-        },
-      ],
-      default: [],
+    imgUrl: {
+      type: String,
     },
   },
   {

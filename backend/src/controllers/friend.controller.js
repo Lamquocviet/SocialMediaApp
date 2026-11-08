@@ -38,6 +38,12 @@ export const sendFriendRequest = async (req, res) => {
       return res.status(400).json({ message: "Đã có lời mời kết bạn đang chờ" });
     }
 
+    if (from.toString() === to.toString()) {
+      return res
+        .status(400)
+        .json({ message: "Bạn không thể gửi lời mời kết bạn cho chính mình" });
+    }
+
     const request = await FriendRequest.create({
       from,
       to,
