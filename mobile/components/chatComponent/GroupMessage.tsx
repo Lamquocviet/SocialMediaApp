@@ -1,244 +1,257 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
+import type { Conversation } from "@/types/chat";
 
-type GroupConversation = {
-  id: string;
-  name: string;
-  time: string;
-  message: string;
-  sender: string;
-  members: number;
-  unread?: number;
-  pinned?: boolean;
-};
+interface GroupMessageProps {
+  conversation: Conversation;
+  currentUserId: string;
+}
 
-const GROUP_MESSAGES: GroupConversation[] = [
-  {
-    id: "1",
-    name: "Design System Team",
-    time: "10:30",
-    sender: "Tuấn Kiệt",
-    message: "Đã update component mới",
-    members: 12,
-    unread: 5,
-    pinned: true,
-  },
-  {
-    id: "2",
-    name: "Project Chat App",
-    time: "09:45",
-    sender: "Quốc Bảo",
-    message: "Mọi người kiểm tra lại API nhé!",
-    members: 8,
-    unread: 3,
-  },
-  {
-    id: "3",
-    name: "Team Development",
-    time: "Hôm qua",
-    sender: "Bạn",
-    message: "Mình đã hoàn thành phần Backend",
-    members: 15,
-  },
-  {
-    id: "4",
-    name: "Friends Forever",
-    time: "T2",
-    sender: "Lan Anh",
-    message: "Cuối tuần này đi chơi không?",
-    members: 6,
-    unread: 2,
-  },
-];
+const WEEKDAYS = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 
-const COLORS = {
-  primary: "#5B4BDB",
-  primarySoft: "#EEEBFF",
-  card: "#FFFFFF",
-  text: "#1B1B2F",
-  sub: "#6B7280",
-};
+const isSameDay = (a: Date, b: Date) =>
+  a.getFullYear() === b.getFullYear() &&
+  a.getMonth() === b.getMonth() &&
+  a.getDate() === b.getDate();
 
-const GroupMessageItem = ({ item }: { item: GroupConversation }) => {
-  const router = useRouter();
-  return (
-    <TouchableOpacity
-      activeOpacity={0.8}
-      style={styles.card}
-      onPress={() =>
-        router.push({
-          pathname: "/chat/[id]",
-          params: {
-            id: item.id,
-            type: "group",
-            name: item.name,
-            memberCount: item.members.toString(),
-          },
-        })
-      }
-    >
-      <View style={styles.avatar}>
-        <Ionicons
-          name="people"
-          size={23}
-          color={COLORS.primary}
-        />
-      </View>
+const formatTime = (date?: string | null) => {
+  if (!date) return "";
 
-      <View style={styles.content}>
-        <View style={styles.row}>
-          <View style={styles.nameWrap}>
-            <Text
-              style={styles.name}
-              numberOfLines={1}
-            >
-              {item.name}
-            </Text>
-            {item.pinned && (
-              <Ionicons
-                name="pin"
-                size={12}
-                color={COLORS.primary}
-              />
-            )}
-          </View>
-          <Text style={styles.time}>{item.time}</Text>
-        </View>
+  const parsed = new Date(date);
+  if (Number.isNaN(parsed.getTime())) return "";
 
-        <View style={styles.row}>
-          <View style={styles.messageWrap}>
-            <Text
-              numberOfLines={1}
-              style={[styles.message, !!item.unread && styles.unreadMessage]}
-            >
-              {item.sender}: {item.message}
-            </Text>
-          </View>
+  const now = new Date();
 
-          {!!item.unread && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{item.unread}</Text>
-            </View>
-          )}
-        </View>
-
-        <View style={styles.memberWrap}>
-          <Ionicons
-            name="people-outline"
-            size={12}
-            color={COLORS.sub}
-          />
-          <Text style={styles.memberText}>{item.members} thành viên</Text>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-};
-
-export default function GroupMessage() {
-  if (GROUP_MESSAGES.length === 0) {
-    return <Text style={styles.empty}>Chưa có nhóm trò chuyện</Text>;
+  if (isSameDay(parsed, now)) {
+    return parsed.toLocaleTimeString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   }
 
+  const diffDays = (now.getTime() - parsed.getTime()) / (1000 * 60 * 60 * 24);
+  if (diffDays < 7) return WEEKDAYS[parsed.getDay()];
+
+  return parsed.toLocaleDateString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+  });
+};
+
+export default function GroupMessage({
+  conversation,
+  currentUserId,
+}: GroupMessageProps) {
+  const router = useRouter();
+
+  const groupName = conversation.group?.name ?? "Chat nhóm";
+  const lastMessage = conversation.lastMessage;
+
+  const senderId =
+    typeof lastMessage?.senderId === "string"
+      ? lastMessage.senderId
+      : lastMessage?.senderId?._id;
+
+  const sender = conversation.participants.find(
+    (participant) => participant._id === senderId,
+  );
+
+  const isSentByMe = senderId === currentUserId;
+  const unreadCount = conversation.unreadCounts?.[currentUserId] ?? 0;
+  const hasUnread = unreadCount > 0;
+
+  const messagePreview = lastMessage
+    ? lastMessage.content?.trim() || "Đã gửi tin nhắn"
+    : "Bắt đầu cuộc trò chuyện";
+
+  const senderName = isSentByMe ? "Bạn" : (sender?.displayName ?? "Người dùng");
+
+  const openConversation = () => {
+    router.push({
+      pathname: "/chat/[id]",
+      params: {
+        id: conversation._id,
+        type: "group",
+        name: groupName,
+      },
+    });
+  };
+
   return (
-    <View style={styles.container}>
-      {GROUP_MESSAGES.map((item) => (
-        <GroupMessageItem
-          key={item.id}
-          item={item}
-        />
-      ))}
-    </View>
+    <Pressable
+      style={({ pressed }) => [
+        styles.card,
+        hasUnread && styles.cardUnread,
+        pressed && styles.cardPressed,
+      ]}
+      onPress={openConversation}
+    >
+      {hasUnread && <View style={styles.accentBar} />}
+
+      {/* Hàng 1: avatar + tên nhóm + thời gian */}
+      <View style={styles.headerRow}>
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>{groupName.charAt(0).toUpperCase()}</Text>
+        </View>
+
+        <View style={styles.headerInfo}>
+          <Text
+            style={styles.name}
+            numberOfLines={1}
+          >
+            {groupName}
+          </Text>
+          <Text style={styles.memberCount}>
+            {conversation.participants.length} thành viên
+          </Text>
+        </View>
+
+        <Text style={styles.time}>{formatTime(lastMessage?.createdAt)}</Text>
+      </View>
+
+      {/* Hàng 2: tin nhắn cuối + badge */}
+      <View style={styles.bottomRow}>
+        <Text
+          style={[styles.message, hasUnread && styles.unreadMessage]}
+          numberOfLines={1}
+        >
+          {lastMessage ? `${senderName}: ` : ""}
+          {messagePreview}
+        </Text>
+
+        {hasUnread && (
+          <View style={styles.unreadBadge}>
+            <Text style={styles.unreadText}>
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </Text>
+          </View>
+        )}
+      </View>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    gap: 10,
-  },
+  /* ---------- Khung card ---------- */
   card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#F0F0F5",
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    marginHorizontal: 16,
+    marginVertical: 6,
+
+    // shadow iOS
+    shadowColor: "#1F1B4D",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    // shadow Android
+    elevation: 2,
+  },
+
+  cardUnread: {
+    backgroundColor: "#FAF9FF",
+    borderColor: "#E4DEFB",
+  },
+
+  cardPressed: {
+    transform: [{ scale: 0.98 }],
+    backgroundColor: "#F5F3FF",
+  },
+
+  accentBar: {
+    position: "absolute",
+    left: 0,
+    top: 20,
+    bottom: 20,
+    width: 3,
+    borderTopRightRadius: 3,
+    borderBottomRightRadius: 3,
+    backgroundColor: "#6D5BD0",
+  },
+
+  /* ---------- Hàng 1 ---------- */
+  headerRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.card,
-    borderRadius: 16,
-    padding: 12,
   },
+
   avatar: {
-    width: 48,
-    height: 48,
+    width: 44,
+    height: 44,
     borderRadius: 14,
-    backgroundColor: COLORS.primarySoft,
-    alignItems: "center",
+    backgroundColor: "#EDE9FE",
     justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
   },
-  content: {
+
+  avatarText: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#7C3AED",
+  },
+
+  headerInfo: {
     flex: 1,
-    marginLeft: 12,
+    marginRight: 8,
   },
-  row: {
+
+  name: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#111827",
+  },
+
+  memberCount: {
+    fontSize: 12,
+    color: "#9CA3AF",
+    marginTop: 2,
+  },
+
+  time: {
+    fontSize: 13,
+    color: "#9CA3AF",
+    alignSelf: "flex-start",
+  },
+
+  /* ---------- Hàng 2 ---------- */
+  bottomRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    marginTop: 10,
   },
-  nameWrap: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    marginRight: 8,
-  },
-  name: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: COLORS.text,
-    flexShrink: 1,
-  },
-  time: {
-    fontSize: 11,
-    color: COLORS.sub,
-  },
-  messageWrap: {
-    flex: 1,
-    marginTop: 5,
-    marginRight: 8,
-  },
+
   message: {
-    fontSize: 12,
-    color: COLORS.sub,
+    flex: 1,
+    fontSize: 14,
+    color: "#6B7280",
+    marginRight: 8,
   },
+
   unreadMessage: {
-    color: COLORS.text,
+    color: "#111827",
     fontWeight: "600",
   },
-  badge: {
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: COLORS.primary,
-    alignItems: "center",
+
+  unreadBadge: {
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "#6D5BD0",
     justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 6,
   },
-  badgeText: {
-    color: "#FFFFFF",
+
+  unreadText: {
     fontSize: 11,
+    color: "#FFFFFF",
     fontWeight: "700",
-  },
-  memberWrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    marginTop: 5,
-  },
-  memberText: {
-    fontSize: 10,
-    color: COLORS.sub,
-  },
-  empty: {
-    textAlign: "center",
-    color: COLORS.sub,
-    marginTop: 30,
   },
 });

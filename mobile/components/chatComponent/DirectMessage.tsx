@@ -1,62 +1,13 @@
 import React from "react";
-import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, Image, Pressable, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import type { Conversation } from "@/types/chat";
 
-type DirectConversation = {
-  id: string;
-  name: string;
-  avatar: string;
-  time: string;
-  message: string;
-  online?: boolean;
-  unread?: number;
-  sentByMe?: boolean;
-  seen?: boolean;
-  pinned?: boolean;
-};
-
-const DIRECT_MESSAGES: DirectConversation[] = [
-  {
-    id: "1",
-    name: "Lan Anh Hoàng",
-    avatar: "https://i.pravatar.cc/150?img=47",
-    time: "10:18",
-    message: "Tuyệt vời quá! Mình gửi lời mời kết bạn...",
-    online: true,
-    unread: 2,
-    pinned: true,
-  },
-  {
-    id: "2",
-    name: "Lê Quốc Bảo",
-    avatar: "https://i.pravatar.cc/150?img=12",
-    time: "09:30",
-    message: "Mọi người hẹn cà phê trao đổi nhé!",
-    online: true,
-    sentByMe: true,
-    seen: true,
-  },
-  {
-    id: "3",
-    name: "Nguyễn Thảo My",
-    avatar: "https://i.pravatar.cc/150?img=32",
-    time: "Hôm qua",
-    message: "Cảm ơn bạn nhiều nhé! ✨",
-    sentByMe: true,
-    seen: true,
-  },
-  {
-    id: "4",
-    name: "Tuấn Kiệt",
-    avatar: "https://i.pravatar.cc/150?img=15",
-    time: "T2",
-    message: "Bạn đang làm dự án gì vậy?",
-    online: false,
-    unread: 1,
-  },
-];
-
+interface DirectMessageProps {
+  conversation: Conversation;
+  currentUserId: string;
+}
 const COLORS = {
   primary: "#5B4BDB",
   bg: "#F4F5FA",
@@ -66,42 +17,95 @@ const COLORS = {
   online: "#22C55E",
 };
 
-const DirectMessageItem = ({ item }: { item: DirectConversation }) => {
+const formatTime = (date?: string | null) => {
+  if (!date) return "";
+  const parsedDate = new Date(date);
+  if (Number.isNaN(parsedDate.getTime())) return "";
+
+  return parsedDate.toLocaleTimeString("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+export default function DirectMessage({
+  conversation,
+  currentUserId,
+}: DirectMessageProps) {
   const router = useRouter();
+
+  const otherUser = conversation.participants.find(
+    (participant) => participant._id !== currentUserId,
+  );
+
+  const lastMessage = conversation.lastMessage;
+
+  const senderId =
+    typeof lastMessage?.senderId === "string"
+      ? lastMessage.senderId
+      : lastMessage?.senderId?._id;
+
+  const isSentByMe = senderId === currentUserId;
+
+  const unreadCount = conversation.unreadCounts?.[currentUserId] ?? 0;
+
+  const messagePreview = lastMessage
+    ? lastMessage.content?.trim() || "Đã gửi tin nhắn"
+    : "Bắt đầu cuộc trò chuyện";
+
+  const displayName = otherUser?.displayName ?? "Người dùng";
+  const avatarUrl = otherUser?.avatarUrl;
+
+  // Các thuộc tính bổ trợ giao diện (fallback an toàn nếu dữ liệu backend chưa có)
+  const isOnline = (otherUser as any)?.isOnline ?? false;
+  const isPinned = (conversation as any)?.isPinned ?? false;
+
+  const openConversation = () => {
+    router.push({
+      pathname: "/chat/[id]",
+      params: {
+        id: conversation._id,
+        type: "direct",
+        name: displayName,
+        avatar: avatarUrl ?? "",
+      },
+    });
+  };
+
   return (
-    <TouchableOpacity
-      activeOpacity={0.8}
-      style={styles.card}
-      onPress={() =>
-        router.push({
-          pathname: "/chat/[id]",
-          params: {
-            id: item.id,
-            type: "direct",
-            name: item.name,
-            avatar: item.avatar,
-          },
-        })
-      }
+    <Pressable
+      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      onPress={openConversation}
     >
+      {/* Avatar & Online Status Dot */}
       <View>
-        <Image
-          source={{ uri: item.avatar }}
-          style={styles.avatar}
-        />
-        {item.online && <View style={styles.onlineDot} />}
+        {avatarUrl ? (
+          <Image
+            source={{ uri: avatarUrl }}
+            style={styles.avatar}
+          />
+        ) : (
+          <View style={styles.avatarFallback}>
+            <Text style={styles.avatarText}>
+              {displayName.charAt(0).toUpperCase()}
+            </Text>
+          </View>
+        )}
+        {isOnline && <View style={styles.onlineDot} />}
       </View>
 
+      {/* Main Content */}
       <View style={styles.content}>
+        {/* Top Row: Name, Pinned icon & Time */}
         <View style={styles.row}>
           <View style={styles.nameWrap}>
             <Text
               style={styles.name}
               numberOfLines={1}
             >
-              {item.name}
+              {displayName}
             </Text>
-            {item.pinned && (
+            {isPinned && (
               <Ionicons
                 name="pin"
                 size={12}
@@ -109,12 +113,13 @@ const DirectMessageItem = ({ item }: { item: DirectConversation }) => {
               />
             )}
           </View>
-          <Text style={styles.time}>{item.time}</Text>
+          <Text style={styles.time}>{formatTime(lastMessage?.createdAt)}</Text>
         </View>
 
+        {/* Bottom Row: Message preview, Sent checkmark & Unread Badge */}
         <View style={styles.row}>
           <View style={styles.messageWrap}>
-            {item.sentByMe && (
+            {isSentByMe && (
               <Ionicons
                 name="checkmark-done"
                 size={14}
@@ -123,63 +128,73 @@ const DirectMessageItem = ({ item }: { item: DirectConversation }) => {
             )}
             <Text
               numberOfLines={1}
-              style={[styles.message, !!item.unread && styles.unreadMessage]}
+              style={[styles.message, unreadCount > 0 && styles.unreadMessage]}
             >
-              {item.message}
+              {lastMessage && isSentByMe ? "Bạn: " : ""}
+              {messagePreview}
             </Text>
           </View>
 
-          {!!item.unread && (
+          {unreadCount > 0 ? (
             <View style={styles.badge}>
-              <Text style={styles.badgeText}>{item.unread}</Text>
+              <Text style={styles.badgeText}>
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </Text>
             </View>
-          )}
-
-          {!item.unread && item.seen && (
-            <Ionicons
-              name="checkmark"
-              size={16}
-              color={COLORS.online}
-            />
+          ) : (
+            isSentByMe && (
+              <Ionicons
+                name="checkmark"
+                size={16}
+                color={COLORS.online}
+              />
+            )
           )}
         </View>
       </View>
-    </TouchableOpacity>
-  );
-};
-
-export default function DirectMessage() {
-  if (DIRECT_MESSAGES.length === 0) {
-    return <Text style={styles.empty}>Chưa có tin nhắn cá nhân</Text>;
-  }
-
-  return (
-    <View style={styles.container}>
-      {DIRECT_MESSAGES.map((item) => (
-        <DirectMessageItem
-          key={item.id}
-          item={item}
-        />
-      ))}
-    </View>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    gap: 10, // Khoảng cách giữa các item chat cá nhân
-  },
   card: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: COLORS.card,
     borderRadius: 16,
     padding: 12,
+    marginVertical: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  pressed: {
+    opacity: 0.85,
+    backgroundColor: "#FAFAFC",
   },
   avatar: {
     width: 48,
     height: 48,
     borderRadius: 24,
+  },
+  avatarFallback: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#DBEAFE",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  avatarText: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: COLORS.primary,
   },
   onlineDot: {
     position: "absolute",
@@ -223,7 +238,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    marginTop: 5,
+    marginTop: 4,
     marginRight: 8,
   },
   message: {
@@ -248,10 +263,5 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 11,
     fontWeight: "700",
-  },
-  empty: {
-    textAlign: "center",
-    color: COLORS.sub,
-    marginTop: 30,
   },
 });

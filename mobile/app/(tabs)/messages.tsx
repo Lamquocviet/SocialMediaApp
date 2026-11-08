@@ -1,323 +1,360 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
+
 import {
   View,
   Text,
   TextInput,
-  ScrollView,
-  TouchableOpacity,
+  FlatList,
+  Pressable,
+  ActivityIndicator,
+  RefreshControl,
   StyleSheet,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+
+import { useConversations } from "@/hooks/useChat";
+
+import type { Conversation, ConversationType } from "@/types/chat";
+
 import DirectMessage from "@/components/chatComponent/DirectMessage";
 import GroupMessage from "@/components/chatComponent/GroupMessage";
-import ActiveUserItem from "@/components/chatComponent/ActiveUserItem";
-import { useRouter } from "expo-router";
+import ConversationItem from "@/components/ConversationItem";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-type ActiveUser = {
-  id: string;
-  name: string;
-  avatar?: string;
-  isMe?: boolean;
-  ring?: boolean;
-  online?: boolean;
-};
+// ========================================
+// TYPES
+// ========================================
 
-const COLORS = {
-  primary: "#5B4BDB",
-  primarySoft: "#EEEBFF",
-  bg: "#F4F5FA",
-  card: "#FFFFFF",
-  text: "#1B1B2F",
-  sub: "#6B7280",
-  border: "#E5E7EB",
-  online: "#22C55E",
-};
+type ChatTab = "all" | "direct" | "group";
 
-const ACTIVE_USERS: ActiveUser[] = [
-  { id: "me", name: "Bạn", isMe: true },
-  {
-    id: "1",
-    name: "Lan Anh",
-    avatar: "https://i.pravatar.cc/150?img=47",
-    ring: true,
-    online: true,
-  },
-  {
-    id: "2",
-    name: "Quốc Bảo",
-    avatar: "https://i.pravatar.cc/150?img=12",
-    online: true,
-  },
-  {
-    id: "3",
-    name: "Thảo My",
-    avatar: "https://i.pravatar.cc/150?img=32",
-    online: true,
-  },
-  {
-    id: "4",
-    name: "Tuấn Kiệt",
-    avatar: "https://i.pravatar.cc/150?img=15",
-    online: true,
-  },
-];
-const TABS = [
-  { key: "all", label: "Tất cả" },
-  { key: "direct", label: "Cá nhân" },
-  { key: "group", label: "Nhóm" },
-];
+interface ChatListScreenProps {
+  currentUserId: string;
+}
 
-export default function ChatListScreen() {
-  const [activeTab, setActiveTab] = useState("all");
-  const [query, setQuery] = useState("");
-  const router = useRouter();
+// ========================================
+// COMPONENT
+// ========================================
 
-  const Header = (
-    <View>
-      {/* Đang hoạt động */}
-      <View style={styles.sectionHeader}>
-        <View style={styles.sectionTitleWrap}>
-          <Text style={styles.sectionTitle}>Đang hoạt động</Text>
-          <View style={styles.titleDot} />
-        </View>
-        <TouchableOpacity>
-          <Text style={styles.seeAll}>Xem tất cả</Text>
-        </TouchableOpacity>
-      </View>
+export default function ChatListScreen({ currentUserId }: ChatListScreenProps) {
+  const [activeTab, setActiveTab] = useState<ChatTab>("all");
+  const [search, setSearch] = useState("");
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.activeList}
-      >
-        {ACTIVE_USERS.map((u) => (
-          <ActiveUserItem
-            key={u.id}
-            user={u}
-            onPress={() => {
-              if (u.isMe) return;
+  const { data, isLoading, isError, refetch, isRefetching } = useConversations();
 
-              router.push({
-                pathname: "/chat/[id]",
-                params: {
-                  id: u.id,
-                  type: "direct",
-                  name: u.name,
-                  avatar: u.avatar ?? "",
-                },
-              });
-            }}
-          />
-        ))}
-      </ScrollView>
+  // ========================================
+  // GET CONVERSATIONS
+  // ========================================
 
-      {/* Search */}
-      <View style={styles.searchBox}>
-        <Ionicons
-          name="search"
-          size={18}
-          color={COLORS.sub}
+  const conversations = data?.conversations ?? [];
+
+  // ========================================
+  // FILTER CONVERSATIONS
+  // ========================================
+
+  const filteredConversations = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
+
+    return conversations.filter((conversation) => {
+      // Filter theo tab
+      const matchesTab = activeTab === "all" || conversation.type === activeTab;
+
+      if (!matchesTab) {
+        return false;
+      }
+
+      // Xác định tên conversation
+      let conversationName = "";
+
+      if (conversation.type === "group") {
+        conversationName = conversation.group?.name ?? "";
+      } else {
+        const otherUser = conversation.participants.find(
+          (participant) => participant._id !== currentUserId,
+        );
+
+        conversationName = otherUser?.displayName ?? "";
+      }
+
+      // Filter theo từ khóa
+      const matchesSearch = conversationName.toLowerCase().includes(keyword);
+
+      return matchesSearch;
+    });
+  }, [conversations, activeTab, search, currentUserId]);
+
+  // ========================================
+  // RENDER CONVERSATION
+  // ========================================
+
+  // const renderConversation = ({ item }: { item: Conversation }) => {
+  //   return (
+  //     <View style={styles.conversationItem}>
+  //       {item.type === "direct" ? (
+  //         <DirectMessage
+  //           conversation={item}
+  //           currentUserId={currentUserId}
+  //         />
+  //       ) : (
+  //         <GroupMessage
+  //           conversation={item}
+  //           currentUserId={currentUserId}
+  //         />
+  //       )}
+  //     </View>
+  //   );
+  // };
+  const renderConversation = ({ item }: { item: Conversation }) => {
+    return (
+      <View style={styles.conversationItem}>
+        <ConversationItem
+          conversation={item}
+          currentUserId={currentUserId}
         />
-        <TextInput
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Tìm kiếm người dùng, cuộc trò chuyện..."
-          placeholderTextColor={COLORS.sub}
-          style={styles.searchInput}
-        />
-        <TouchableOpacity>
-          <Ionicons
-            name="options-outline"
-            size={20}
-            color={COLORS.sub}
-          />
-        </TouchableOpacity>
       </View>
+    );
+  };
+  // ========================================
+  // LOADING
+  // ========================================
 
-      {/* Filter tabs */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.tabList}
-      >
-        {TABS.map((tab) => {
-          const active = activeTab === tab.key;
+  if (isLoading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator
+          size="large"
+          color="#2563EB"
+        />
+        <Text style={styles.loadingText}>Đang tải cuộc trò chuyện...</Text>
+      </View>
+    );
+  }
+
+  // ========================================
+  // ERROR
+  // ========================================
+
+  if (isError) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.errorText}>
+          Không thể tải danh sách cuộc trò chuyện.
+        </Text>
+
+        <Pressable
+          style={styles.retryButton}
+          onPress={() => refetch()}
+        >
+          <Text style={styles.retryText}>Thử lại</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  // ========================================
+  // HEADER
+  // ========================================
+
+  const ListHeader = (
+    <View style={styles.header}>
+      <Text style={styles.title}>Tin nhắn</Text>
+
+      <TextInput
+        value={search}
+        onChangeText={setSearch}
+        placeholder="Tìm kiếm cuộc trò chuyện..."
+        placeholderTextColor="#9CA3AF"
+        style={styles.searchInput}
+      />
+
+      <View style={styles.tabs}>
+        {(
+          [
+            { key: "all", label: "Tất cả" },
+            { key: "direct", label: "Cá nhân" },
+            { key: "group", label: "Nhóm" },
+          ] as {
+            key: ChatTab;
+            label: string;
+          }[]
+        ).map((tab) => {
+          const isActive = activeTab === tab.key;
 
           return (
-            <TouchableOpacity
+            <Pressable
               key={tab.key}
               onPress={() => setActiveTab(tab.key)}
-              style={[styles.tabChip, active && styles.tabChipActive]}
+              style={[styles.tab, isActive && styles.activeTab]}
             >
-              <Text style={[styles.tabText, active && styles.tabTextActive]}>
+              <Text style={[styles.tabText, isActive && styles.activeTabText]}>
                 {tab.label}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           );
         })}
-      </ScrollView>
+      </View>
     </View>
   );
 
+  // ========================================
+  // EMPTY STATE
+  // ========================================
+
+  const EmptyList = (
+    <View style={styles.emptyContainer}>
+      <Text style={styles.emptyTitle}>Không tìm thấy cuộc trò chuyện</Text>
+
+      <Text style={styles.emptyDescription}>
+        Thử thay đổi từ khóa tìm kiếm hoặc chọn tab khác.
+      </Text>
+    </View>
+  );
+
+  // ========================================
+  // MAIN UI
+  // ========================================
+
   return (
-    <SafeAreaView
-      style={styles.safe}
-      edges={["top", "bottom"]}
-    >
-      <View style={styles.container}>
-        {Header}
-
-        <View style={styles.container}>
-          <ScrollView showsVerticalScrollIndicator={false}>
-            {activeTab === "all" && (
-              <>
-                <Text style={styles.listTitle}>Tất cả</Text>
-
-                <View style={styles.listSection}>
-                  <View style={styles.listHeader}>
-                    <Text style={styles.listSectionTitle}>Tin nhắn cá nhân</Text>
-                    <Text style={styles.countBadge}>2 cuộc trò chuyện</Text>
-                  </View>
-
-                  <DirectMessage />
-                </View>
-
-                <View style={styles.listSection}>
-                  <View style={styles.listHeader}>
-                    <Text style={styles.listSectionTitle}>Tin nhắn nhóm</Text>
-                    <Text style={styles.countBadge}>3 nhóm</Text>
-                  </View>
-
-                  <GroupMessage />
-                </View>
-              </>
-            )}
-
-            {activeTab === "direct" && (
-              <>
-                <Text style={styles.listTitle}>Tin nhắn cá nhân</Text>
-                <DirectMessage />
-              </>
-            )}
-
-            {activeTab === "group" && (
-              <>
-                <Text style={styles.listTitle}>Tin nhắn nhóm</Text>
-                <GroupMessage />
-              </>
-            )}
-          </ScrollView>
-        </View>
-      </View>
+    <SafeAreaView style={styles.container}>
+      <FlatList
+        data={filteredConversations}
+        keyExtractor={(item) => item._id}
+        renderItem={renderConversation}
+        ListHeaderComponent={ListHeader}
+        ListEmptyComponent={EmptyList}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={refetch}
+            colors={["#2563EB"]}
+          />
+        }
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={
+          filteredConversations.length === 0 ? styles.emptyListContent : undefined
+        }
+      />
     </SafeAreaView>
   );
 }
 
-// Styles
+// ========================================
+// STYLES
+// ========================================
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.bg },
-  container: { flex: 1 },
+  container: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
+  conversationItem: {
+    marginHorizontal: 5,
+    marginVertical: 2,
 
-  /* Section header */
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    overflow: "hidden",
+  },
+
+  center: {
+    flex: 1,
+    justifyContent: "center",
     alignItems: "center",
+    padding: 24,
+  },
+
+  loadingText: {
+    marginTop: 12,
+    color: "#6B7280",
+    fontSize: 14,
+  },
+
+  errorText: {
+    color: "#DC2626",
+    fontSize: 14,
+    textAlign: "center",
+  },
+
+  retryButton: {
+    marginTop: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: "#2563EB",
+  },
+
+  retryText: {
+    color: "#FFFFFF",
+    fontWeight: "600",
+  },
+
+  header: {
     paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingTop: 16,
+    paddingBottom: 12,
   },
-  sectionTitleWrap: { flexDirection: "row", alignItems: "center" },
-  sectionTitle: { fontSize: 13, fontWeight: "600", color: COLORS.text },
-  titleDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: COLORS.online,
-    marginLeft: 6,
+
+  title: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 16,
   },
-  seeAll: { fontSize: 12, fontWeight: "600", color: COLORS.primary },
 
-  /* Active users */
-  activeList: { paddingHorizontal: 16, paddingVertical: 12, gap: 14 },
-
-  /* Search */
-  searchBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.card,
-    borderRadius: 14,
-    marginHorizontal: 16,
-    paddingHorizontal: 12,
+  searchInput: {
     height: 44,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    backgroundColor: "#F3F4F6",
+    color: "#111827",
+    fontSize: 14,
   },
-  searchInput: { flex: 1, marginHorizontal: 8, fontSize: 13, color: COLORS.text },
 
-  /* Tabs */
-  tabList: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+  tabs: {
+    flexDirection: "row",
+    marginTop: 16,
     gap: 8,
   },
 
-  tabChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 16,
-    backgroundColor: COLORS.primarySoft,
+  tab: {
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: 20,
+    backgroundColor: "#F3F4F6",
   },
 
-  tabChipActive: {
-    backgroundColor: COLORS.primary,
+  activeTab: {
+    backgroundColor: "#2563EB",
   },
 
   tabText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: COLORS.primary,
+    color: "#4B5563",
+    fontSize: 13,
+    fontWeight: "500",
   },
 
-  tabTextActive: {
+  activeTabText: {
     color: "#FFFFFF",
   },
-  listTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: COLORS.text,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 8,
+
+  emptyListContent: {
+    flexGrow: 1,
   },
 
-  listSection: {
-    paddingHorizontal: 16,
-    paddingTop: 0,
-    paddingBottom: 0,
-  },
-
-  listHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
     alignItems: "center",
-    marginBottom: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 48,
   },
 
-  listSectionTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: COLORS.text,
-  },
-
-  countBadge: {
-    fontSize: 11,
+  emptyTitle: {
+    fontSize: 15,
     fontWeight: "600",
-    color: COLORS.text,
-    backgroundColor: "#EEEEEE",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    color: "#374151",
+  },
+
+  emptyDescription: {
+    fontSize: 13,
+    color: "#9CA3AF",
+    textAlign: "center",
+    marginTop: 8,
   },
 });
