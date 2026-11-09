@@ -4,21 +4,23 @@ import ChatRoom, { ChatType } from "@/components/chatComponent/ChatRoom";
 
 export default function ChatDetailScreen() {
   const router = useRouter();
-  const { type, name, avatar, memberCount } = useLocalSearchParams<{
+  const { id, type, name, avatar, recipientId } = useLocalSearchParams<{
     id: string;
     type?: ChatType;
     name?: string;
     avatar?: string;
-    memberCount?: string;
+    recipientId?: string;
   }>();
 
   return (
     <ChatRoom
-      type={type === "group" ? "group" : "direct"}
-      name={name ?? "Người dùng"}
-      avatar={avatar}
-      memberCount={Number(memberCount ?? 0)}
+      conversationId={id === "new" ? undefined : id}
+      recipientId={recipientId}
+      fallbackType={type === "group" ? "group" : "direct"}
+      fallbackName={name}
+      fallbackAvatar={avatar}
       onBack={() => router.back()}
+      onConversationCreated={(newId) => router.setParams({ id: newId })}
     />
   );
 }

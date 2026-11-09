@@ -236,7 +236,7 @@ export default function ConversationItem({
               </View>
 
               {/* Hàng 3 (chỉ nhóm): số thành viên */}
-              {isGroup && (
+              {/* {isGroup && (
                 <View style={styles.memberRow}>
                   <Ionicons
                     name="people-outline"
@@ -247,7 +247,7 @@ export default function ConversationItem({
                     {conversation.participants.length} thành viên
                   </Text>
                 </View>
-              )}
+              )} */}
             </View>
           </View>
         </LinearGradient>

@@ -57,7 +57,7 @@ export const signIn = async (req, res) => {
     const user = await User.findOne({ username });
 
     if (!user) {
-      return res.status(401).json({ message: "Invalid username or password" });
+      return res.status(401).json({ message: "Invalid username" });
     }
 
     const storedHash = getPasswordHash(user);
@@ -66,7 +66,7 @@ export const signIn = async (req, res) => {
       : false;
 
     if (!passwordCorrect) {
-      return res.status(401).json({ message: "Invalid username or password" });
+      return res.status(401).json({ message: "Invalid password" });
     }
 
     const accessToken = jwt.sign({ userId: user._id }, ENV.JWT_SECRET, {

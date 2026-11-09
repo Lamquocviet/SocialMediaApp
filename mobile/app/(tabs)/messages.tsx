@@ -15,8 +15,6 @@ import { useConversations } from "@/hooks/useChat";
 
 import type { Conversation, ConversationType } from "@/types/chat";
 
-import DirectMessage from "@/components/chatComponent/DirectMessage";
-import GroupMessage from "@/components/chatComponent/GroupMessage";
 import ConversationItem from "@/components/ConversationItem";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -85,23 +83,6 @@ export default function ChatListScreen({ currentUserId }: ChatListScreenProps) {
   // RENDER CONVERSATION
   // ========================================
 
-  // const renderConversation = ({ item }: { item: Conversation }) => {
-  //   return (
-  //     <View style={styles.conversationItem}>
-  //       {item.type === "direct" ? (
-  //         <DirectMessage
-  //           conversation={item}
-  //           currentUserId={currentUserId}
-  //         />
-  //       ) : (
-  //         <GroupMessage
-  //           conversation={item}
-  //           currentUserId={currentUserId}
-  //         />
-  //       )}
-  //     </View>
-  //   );
-  // };
   const renderConversation = ({ item }: { item: Conversation }) => {
     return (
       <View style={styles.conversationItem}>

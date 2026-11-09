@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -9,9 +9,22 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+
+import { useCallback, useEffect } from "react";
+
+import {
+  useConversations,
+  useMessages,
+  useSendDirectMessage,
+  useSendGroupMessage,
+  useMarkAsSeen,
+} from "@/hooks/useChat";
+import { useMe } from "@/hooks/useMe";
+import type { Message } from "@/types/chat";
 
 const COLORS = {
   primary: "#3B2FD0",
@@ -26,127 +39,216 @@ const COLORS = {
 
 export type ChatType = "direct" | "group";
 
-type Message = {
-  id: string;
-  from: "me" | "other";
-  senderName?: string;
-  senderAvatar?: string;
-  text?: string;
-  time: string;
-  seen?: boolean;
-  reaction?: string;
-  file?: { name: string; preview: string };
-};
+// type Message = {
+//   id: string;
+//   from: "me" | "other";
+//   senderName?: string;
+//   senderAvatar?: string;
+//   text?: string;
+//   time: string;
+//   seen?: boolean;
+//   reaction?: string;
+//   file?: { name: string; preview: string };
+// };
 
 type Props = {
-  type: ChatType;
-  name: string;
-  avatar?: string;
-  memberCount?: number;
+  conversationId?: string;
+  recipientId?: string;
+  fallbackType?: ChatType;
+  fallbackName?: string;
+  fallbackAvatar?: string;
   onBack: () => void;
+  onConversationCreated?: (id: string) => void;
 };
 
-const AVATAR = "https://i.pravatar.cc/150?img=47";
+const formatTime = (iso: string) => {
+  const d = new Date(iso);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+};
 
-const DIRECT_MESSAGES: Message[] = [
-  {
-    id: "1",
-    from: "other",
-    text: "Chào Minh Quân! Mình xem profile của bạn thấy dự án UI mới đỉnh quá 😍",
-    time: "10:14",
-  },
-  {
-    id: "2",
-    from: "other",
-    senderAvatar: AVATAR,
-    text: "Bạn có rảnh trao đổi xíu về phần thiết kế hệ thống chat này không?",
-    time: "10:15",
-  },
-  {
-    id: "3",
-    from: "me",
-    text: "Chào Lan Anh! Cảm ơn bạn nhiều nhé, dự án này mình vừa hoàn thiện xong sáng nay.",
-    time: "10:16",
-    seen: true,
-  },
-  {
-    id: "4",
-    from: "me",
-    text: "Đây là bản preview flow tương tác kết bạn và realtime chat nhé!",
-    time: "10:17",
-    seen: true,
-    file: {
-      name: "chat_design_system_preview.fig",
-      preview: "https://picsum.photos/600/300",
-    },
-  },
-  {
-    id: "5",
-    from: "other",
-    senderAvatar: AVATAR,
-    text: "Tuyệt vời quá! Mình gửi lời mời kết bạn liền luôn nè 🚀",
-    time: "10:18",
-    reaction: "❤️ 1",
-  },
-];
-
-const GROUP_MESSAGES: Message[] = [
-  {
-    id: "1",
-    from: "other",
-    senderName: "Quốc Bảo",
-    senderAvatar: "https://i.pravatar.cc/150?img=12",
-    text: "Mọi người ơi, mai họp lúc mấy giờ nhỉ?",
-    time: "09:30",
-  },
-  {
-    id: "2",
-    from: "other",
-    senderName: "Thảo My",
-    senderAvatar: "https://i.pravatar.cc/150?img=32",
-    text: "9h sáng nhé, mình đã gửi lịch rồi 📅",
-    time: "09:32",
-  },
-  {
-    id: "3",
-    from: "me",
-    text: "Ok mình nhận được rồi, cảm ơn cả nhà!",
-    time: "09:35",
-    seen: true,
-  },
-];
+function Avatar({ uri, size }: { uri?: string | null; size: number }) {
+  const s = { width: size, height: size, borderRadius: size / 2 };
+  if (uri)
+    return (
+      <Image
+        source={{ uri }}
+        style={s}
+      />
+    );
+  return (
+    <View style={[s, styles.avatarPlaceholder]}>
+      <Ionicons
+        name="person"
+        size={size * 0.55}
+        color={COLORS.primary}
+      />
+    </View>
+  );
+}
 
 export default function ChatRoom({
-  type,
-  name,
-  avatar,
-  memberCount = 0,
+  conversationId,
+  recipientId,
+  fallbackType = "direct",
+  fallbackName,
+  fallbackAvatar,
   onBack,
+  onConversationCreated,
 }: Props) {
-  const isGroup = type === "group";
-  const [messages, setMessages] = useState<Message[]>(
-    isGroup ? GROUP_MESSAGES : DIRECT_MESSAGES,
-  );
   const [text, setText] = useState("");
-  const listRef = useRef<FlatList<Message>>(null);
 
-  const send = () => {
+  const { data: me } = useMe();
+  const { data: convData } = useConversations();
+
+  const conversation = useMemo(
+    () => convData?.conversations.find((c) => c._id === conversationId),
+    [convData, conversationId],
+  );
+
+  const isGroup = (conversation?.type ?? fallbackType) === "group";
+
+  // Thông tin header
+  const other = conversation?.participants.find((p) => p._id !== me?._id);
+  const title = isGroup
+    ? (conversation?.group?.name ?? fallbackName ?? "Nhóm")
+    : (other?.displayName ?? fallbackName ?? "Người dùng");
+  const headerAvatar = isGroup ? null : (other?.avatarUrl ?? fallbackAvatar ?? null);
+  const memberCount = conversation?.participants.length ?? 0;
+
+  const participantMap = useMemo(
+    () => new Map((conversation?.participants ?? []).map((p) => [p._id, p])),
+    [conversation],
+  );
+
+  // Messages: pages[0] là trang mới nhất, mỗi trang sort tăng dần -> đảo để mới nhất đứng đầu (list inverted)
+  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useMessages(conversationId ?? "");
+
+  const messages = useMemo(
+    () => data?.pages.flatMap((p) => [...p.messages].reverse()) ?? [],
+    [data],
+  );
+
+  const sendDirect = useSendDirectMessage();
+  const sendGroup = useSendGroupMessage();
+  const { mutate: markAsSeen } = useMarkAsSeen();
+  const sending = sendDirect.isPending || sendGroup.isPending;
+
+  // Đánh dấu đã xem khi còn tin chưa đọc
+  const unread = me?._id ? (conversation?.unreadCounts?.[me._id] ?? 0) : 0;
+  useEffect(() => {
+    if (conversationId && unread > 0) markAsSeen(conversationId);
+  }, [conversationId, unread]); // eslint-disable-line
+
+  // Người còn lại đã xem tin cuối của mình chưa
+  const seenByOthers = !!conversation?.seenBy?.some((u) => u._id !== me?._id);
+  const lastMessageId = conversation?.lastMessage?._id;
+
+  const send = async () => {
     const value = text.trim();
-    if (!value) return;
-    const now = new Date();
-    const time = `${String(now.getHours()).padStart(2, "0")}:${String(
-      now.getMinutes(),
-    ).padStart(2, "0")}`;
-    setMessages((prev) => [
-      ...prev,
-      { id: String(Date.now()), from: "me", text: value, time },
-    ]);
+    if (!value || sending) return;
     setText("");
-    setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
+    try {
+      if (isGroup) {
+        await sendGroup.mutateAsync({
+          conversationId: conversationId!,
+          content: value,
+        });
+      } else {
+        const msg = await sendDirect.mutateAsync({
+          conversationId,
+          recipientId,
+          content: value,
+        });
+        if (!conversationId && msg?.conversationId) {
+          onConversationCreated?.(String(msg.conversationId));
+        }
+      }
+    } catch {
+      setText(value);
+    }
   };
 
-  const renderHeader = () => (
-    <View>
+  const renderItem = useCallback(
+    ({ item, index }: { item: Message; index: number }) => {
+      const mine = item.senderId === me?._id;
+      const sender = participantMap.get(item.senderId);
+
+      // list inverted: index + 1 = tin cũ hơn, index - 1 = tin mới hơn
+      const older = messages[index + 1];
+      const newer = messages[index - 1];
+      const firstOfCluster = older?.senderId !== item.senderId;
+      const lastOfCluster = newer?.senderId !== item.senderId;
+
+      return (
+        <View
+          style={[
+            styles.msgRow,
+            mine && { justifyContent: "flex-end" },
+            !lastOfCluster && { marginBottom: 3 },
+          ]}
+        >
+          {!mine && (
+            <View style={styles.msgAvatarSlot}>
+              {lastOfCluster && (
+                <Avatar
+                  uri={sender?.avatarUrl}
+                  size={24}
+                />
+              )}
+            </View>
+          )}
+
+          <View style={{ maxWidth: "78%" }}>
+            <View
+              style={[styles.bubble, mine ? styles.bubbleMe : styles.bubbleOther]}
+            >
+              {isGroup && !mine && firstOfCluster && !!sender?.displayName && (
+                <Text style={styles.senderName}>{sender.displayName}</Text>
+              )}
+
+              {!!item.imgUrl && (
+                <Image
+                  source={{ uri: item.imgUrl }}
+                  style={[
+                    styles.filePreview,
+                    { width: 230, borderRadius: 10, marginBottom: 6 },
+                  ]}
+                />
+              )}
+
+              {!!item.content && (
+                <Text style={[styles.msgText, mine && styles.msgTextMe]}>
+                  {item.content}
+                </Text>
+              )}
+
+              <View style={[styles.metaRow, { justifyContent: "flex-end" }]}>
+                <Text style={[styles.time, mine && { color: "#D6D3FF" }]}>
+                  {formatTime(item.createdAt)}
+                </Text>
+                {mine && item._id === lastMessageId && (
+                  <Ionicons
+                    name={seenByOthers ? "checkmark-done" : "checkmark"}
+                    size={14}
+                    color="#9AD7FF"
+                    style={{ marginLeft: 4 }}
+                  />
+                )}
+              </View>
+            </View>
+          </View>
+        </View>
+      );
+    },
+    [messages, me?._id, participantMap, isGroup, lastMessageId, seenByOthers],
+  );
+
+  return (
+    <SafeAreaView
+      style={styles.safe}
+      edges={["top", "bottom"]}
+    >
       {/* Top bar */}
       <View style={styles.topBar}>
         <TouchableOpacity
@@ -178,57 +280,34 @@ export default function ChatRoom({
         />
       </View>
 
-      {/* Contact header */}
+      {/* Contact row */}
       <View style={styles.contactRow}>
-        <View>
-          {avatar ? (
-            <Image
-              source={{ uri: avatar }}
-              style={styles.contactAvatar}
+        {isGroup ? (
+          <View style={[styles.contactAvatar, styles.groupAvatar]}>
+            <Ionicons
+              name="people"
+              size={24}
+              color={COLORS.primary}
             />
-          ) : (
-            <View style={[styles.contactAvatar, styles.groupAvatar]}>
-              <Ionicons
-                name="people"
-                size={24}
-                color={COLORS.primary}
-              />
-            </View>
-          )}
-          {!isGroup && <View style={styles.onlineDot} />}
-        </View>
-
-        <View style={styles.contactInfo}>
-          <View style={styles.nameRow}>
-            <Text
-              style={styles.contactName}
-              numberOfLines={1}
-            >
-              {name}
-            </Text>
-            {!isGroup && (
-              <Ionicons
-                name="checkmark-circle"
-                size={16}
-                color={COLORS.primary}
-                style={{ marginLeft: 4 }}
-              />
-            )}
           </View>
-          {isGroup ? (
+        ) : (
+          <Avatar
+            uri={headerAvatar}
+            size={44}
+          />
+        )}
+        <View style={styles.contactInfo}>
+          <Text
+            style={styles.contactName}
+            numberOfLines={1}
+          >
+            {title}
+          </Text>
+          {isGroup && (
             <Text style={styles.statusText}>{memberCount} thành viên</Text>
-          ) : (
-            <View style={styles.statusRow}>
-              <View style={styles.statusDot} />
-              <Text style={[styles.statusText, { color: COLORS.online }]}>
-                Đang hoạt động
-              </Text>
-            </View>
           )}
         </View>
-
         <View style={styles.actions}>
-          {/* Nhóm: ẩn nút gọi điện / video */}
           {!isGroup && (
             <>
               <TouchableOpacity style={styles.actionBtn}>
@@ -257,125 +336,47 @@ export default function ChatRoom({
         </View>
       </View>
 
-      <View style={styles.dateWrap}>
-        <Text style={styles.dateText}>Hôm nay, 24 Tháng 10</Text>
-      </View>
-    </View>
-  );
-
-  const renderItem = ({ item }: { item: Message }) => {
-    const mine = item.from === "me";
-
-    return (
-      <View style={[styles.msgRow, mine && { justifyContent: "flex-end" }]}>
-        {/* Avatar người gửi */}
-        {!mine && (
-          <View style={styles.msgAvatarSlot}>
-            {item.senderAvatar && (
-              <Image
-                source={{ uri: item.senderAvatar }}
-                style={styles.msgAvatar}
-              />
-            )}
-          </View>
-        )}
-
-        <View style={{ maxWidth: "78%" }}>
-          <View style={[styles.bubble, mine ? styles.bubbleMe : styles.bubbleOther]}>
-            {isGroup && !mine && item.senderName && (
-              <Text style={styles.senderName}>{item.senderName}</Text>
-            )}
-
-            {item.file && (
-              <View style={styles.fileCard}>
-                <Image
-                  source={{ uri: item.file.preview }}
-                  style={styles.filePreview}
-                />
-                <View style={styles.fileNameBar}>
-                  <Ionicons
-                    name="image-outline"
-                    size={14}
-                    color="#fff"
-                  />
-                  <Text
-                    style={styles.fileName}
-                    numberOfLines={1}
-                  >
-                    {item.file.name}
-                  </Text>
-                </View>
-              </View>
-            )}
-
-            {!!item.text && (
-              <Text style={[styles.msgText, mine && styles.msgTextMe]}>
-                {item.text}
-              </Text>
-            )}
-
-            <View style={styles.metaRow}>
-              {item.reaction ? (
-                <View style={styles.reaction}>
-                  <Text style={styles.reactionText}>{item.reaction}</Text>
-                </View>
-              ) : (
-                <View />
-              )}
-              <View style={styles.timeRow}>
-                <Text style={[styles.time, mine && { color: "#D6D3FF" }]}>
-                  {item.time}
-                </Text>
-                {mine && (
-                  <Ionicons
-                    name={item.seen ? "checkmark-done" : "checkmark"}
-                    size={14}
-                    color="#9AD7FF"
-                    style={{ marginLeft: 4 }}
-                  />
-                )}
-              </View>
-            </View>
-          </View>
-        </View>
-      </View>
-    );
-  };
-
-  const renderFooter = () => (
-    <View style={styles.typingRow}>
-      <Image
-        source={{ uri: AVATAR }}
-        style={styles.typingAvatar}
-      />
-      <View style={styles.typingPill}>
-        <Text style={styles.typingText}>
-          {isGroup ? "Quốc Bảo đang gõ" : `${name} đang gõ`}
-        </Text>
-        <Text style={styles.typingDots}> •••</Text>
-      </View>
-    </View>
-  );
-
-  return (
-    <SafeAreaView
-      style={styles.safe}
-      edges={["top", "bottom"]}
-    >
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <FlatList
-          ref={listRef}
-          data={messages}
-          keyExtractor={(m) => m.id}
-          renderItem={renderItem}
-          ListHeaderComponent={renderHeader}
-          ListFooterComponent={renderFooter}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 12 }}
-        />
+        {isLoading && !!conversationId ? (
+          <ActivityIndicator
+            style={{ flex: 1 }}
+            color={COLORS.primary}
+          />
+        ) : (
+          <FlatList
+            data={messages}
+            inverted
+            keyExtractor={(m) => m._id}
+            renderItem={renderItem}
+            onEndReached={() =>
+              hasNextPage && !isFetchingNextPage && fetchNextPage()
+            }
+            onEndReachedThreshold={0.3}
+            ListFooterComponent={
+              isFetchingNextPage ? (
+                <ActivityIndicator color={COLORS.primary} />
+              ) : null
+            }
+            ListEmptyComponent={
+              !isLoading ? (
+                <Text
+                  style={{
+                    textAlign: "center",
+                    color: COLORS.sub,
+                    transform: [{ scaleY: -1 }],
+                  }}
+                >
+                  Hãy bắt đầu cuộc trò chuyện 👋
+                </Text>
+              ) : null
+            }
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingVertical: 12 }}
+          />
+        )}
 
         {/* Input bar */}
         <View style={styles.inputBar}>
@@ -414,18 +415,29 @@ export default function ChatRoom({
           <TouchableOpacity
             style={styles.micBtn}
             onPress={send}
+            disabled={sending}
           >
-            <Ionicons
-              name={text.trim() ? "send" : "mic"}
-              size={20}
-              color="#fff"
-            />
+            {sending ? (
+              <ActivityIndicator
+                color="#fff"
+                size="small"
+              />
+            ) : (
+              <Ionicons
+                name={text.trim() ? "send" : "mic"}
+                size={20}
+                color="#fff"
+              />
+            )}
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
+
+// Thêm vào StyleSheet:
+//   avatarPlaceholder: { backgroundColor: COLORS.primarySoft, alignItems: "center", justifyContent: "center" },
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.bg },
@@ -455,6 +467,11 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   topTitle: { fontSize: 16, fontWeight: "700", color: COLORS.text },
+  avatarPlaceholder: {
+    backgroundColor: COLORS.primarySoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 
   /* Contact */
   contactRow: {

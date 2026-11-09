@@ -1,5 +1,6 @@
 import { Server } from "socket.io";
 import { socketAuthMiddleware } from "../middleware/socket.middleware.js";
+import { getUserConversationsForSocketIO } from "../controllers/coversation.controller.js";
 
 export let io;
 
@@ -21,7 +22,7 @@ export const initSocket = (httpServer) => {
   // Xác thực JWT trước khi cho phép kết nối
   io.use(socketAuthMiddleware);
 
-  io.on("connection", (socket) => {
+  io.on("connection", async (socket) => {
     const user = socket.user;
     const userId = String(user._id);
 
@@ -36,20 +37,6 @@ export const initSocket = (httpServer) => {
 
     // Room riêng của user
     socket.join(userId);
-
-    // Thông báo danh sách user đang online
-    io.emit("online-users", Array.from(onlineUsers.keys()));
-
-    // Tham gia room conversation
-    socket.on("join-conversation", (conversationId) => {
-      if (typeof conversationId !== "string" || !conversationId.trim()) {
-        return;
-      }
-
-      // Lưu ý: cần kiểm tra user có phải thành viên
-      // conversation trước khi cho phép join room.
-      socket.join(conversationId);
-    });
 
     socket.on("disconnect", () => {
       const sockets = onlineUsers.get(userId);
@@ -66,6 +53,24 @@ export const initSocket = (httpServer) => {
       io.emit("online-users", Array.from(onlineUsers.keys()));
 
       console.log(`Socket disconnected: ${socket.id}`);
+    });
+    // Join sẵn mọi conversation của user
+
+    try {
+      const conversationIds = await getUserConversationsForSocket(userId);
+      conversationIds.forEach((id) => socket.join(id.toString()));
+    } catch (err) {
+      console.error("Lỗi join conversations:", err);
+    }
+
+    // Thông báo danh sách user đang online
+    io.emit("online-users", Array.from(onlineUsers.keys()));
+
+    // Tham gia room conversation
+    socket.on("join-conversation", async (conversationId) => {
+      if (typeof conversationId !== "string" || !conversationId.trim()) return;
+      const ids = await getUserConversationsForSocket(userId);
+      if (ids.map(String).includes(conversationId)) socket.join(conversationId);
     });
   });
 

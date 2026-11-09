@@ -9,7 +9,8 @@ import type {
   SendGroupMessagePayload,
 } from "@/types/chat";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://192.168.1.5:5001";
+export const API_BASE_URL =
+  process.env.EXPO_PUBLIC_API_URL || "http://192.168.1.5:5001";
 const AUTH_TOKEN_KEY = "authToken";
 // ! 🔥 localhost api would not work on your actual physical device
 
