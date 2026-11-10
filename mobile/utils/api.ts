@@ -133,8 +133,8 @@ export const userApi = {
 export const friendApi = {
   getRequestedFriends: (api: AxiosInstance) => api.get("/friends/requests"),
 
-  sendFriendRequest: (api: AxiosInstance, data: { to: String; messgae?: String }) =>
-    api.post("/friends/request", data),
+  sendFriendRequest: (api: AxiosInstance, data: { to: String; message?: String }) =>
+    api.post("/friends/requests", data),
 
   acceptFriendRequest: (api: AxiosInstance, requestId: string) =>
     api.post(`/friends/requests/${requestId}/accept`),

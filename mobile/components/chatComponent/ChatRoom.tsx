@@ -1,4 +1,5 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useMemo, useRef, useState, useCallback, useEffect } from "react";
+
 import {
   View,
   Text,
@@ -6,15 +7,13 @@ import {
   TextInput,
   FlatList,
   TouchableOpacity,
-  StyleSheet,
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
 } from "react-native";
+
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-
-import { useCallback, useEffect } from "react";
 
 import {
   useConversations,
@@ -23,19 +22,9 @@ import {
   useSendGroupMessage,
   useMarkAsSeen,
 } from "@/hooks/useChat";
+
 import { useMe } from "@/hooks/useMe";
 import type { Message, ConversationType } from "@/types/chat";
-
-const COLORS = {
-  primary: "#3B2FD0",
-  primarySoft: "#EEEBFF",
-  bg: "#F4F5FA",
-  card: "#FFFFFF",
-  text: "#1B1B2F",
-  sub: "#6B7280",
-  border: "#E5E7EB",
-  online: "#22C55E",
-};
 
 type Props = {
   conversationId?: string;
@@ -47,30 +36,59 @@ type Props = {
   onConversationCreated?: (id: string) => void;
 };
 
-const formatTime = (iso: string) => {
-  const d = new Date(iso);
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+const COLORS = {
+  primary: "#3B2FD0",
+  sub: "#6B7280",
 };
 
-function Avatar({ uri, size }: { uri?: string | null; size: number }) {
-  const s = { width: size, height: size, borderRadius: size / 2 };
-  if (uri)
+// ========================================
+// HELPERS
+// ========================================
+
+const formatTime = (iso: string) => {
+  const d = new Date(iso);
+
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(
+    2,
+    "0",
+  )}`;
+};
+
+// ========================================
+// AVATAR
+// ========================================
+
+function Avatar({ uri, size = 44 }: { uri?: string | null; size?: number }) {
+  const sizeClass =
+    size === 24 ? "h-6 w-6" : size === 44 ? "h-11 w-11" : "h-12 w-12";
+
+  const iconSize = size * 0.55;
+
+  if (uri) {
     return (
       <Image
         source={{ uri }}
-        style={s}
+        className={`${sizeClass} rounded-full`}
       />
     );
+  }
+
   return (
-    <View style={[s, styles.avatarPlaceholder]}>
+    <View
+      className={`${sizeClass} items-center justify-center rounded-full bg-[#EEEBFF]`}
+    >
       <Ionicons
         name="person"
-        size={size * 0.55}
+        size={iconSize}
         color={COLORS.primary}
       />
     </View>
   );
 }
+
+// ========================================
+// CHAT ROOM
+// ========================================
 
 export default function ChatRoom({
   conversationId,
@@ -96,16 +114,20 @@ export default function ChatRoom({
 
   const isGroup = (conversation?.type ?? fallbackType) === "group";
 
-  // Thông tin header: ưu tiên dữ liệu conversation đang có, không dùng name cũ từ route params
+  // Conversation information
   const other = conversation?.participants.find(
     (p) => String(p._id) !== String(me?._id),
   );
+
   const conversationDisplayName = isGroup
     ? conversation?.group?.name
     : other?.displayName;
+
   const title =
     conversationDisplayName ?? fallbackName ?? (isGroup ? "Nhóm" : "Người dùng");
+
   const headerAvatar = isGroup ? null : (other?.avatarUrl ?? fallbackAvatar ?? null);
+
   const memberCount = conversation?.participants.length ?? 0;
 
   const participantMap = useMemo(
@@ -113,7 +135,7 @@ export default function ChatRoom({
     [conversation],
   );
 
-  // Messages: pages[0] là trang mới nhất, mỗi trang sort tăng dần -> đảo để mới nhất đứng đầu (list inverted)
+  // Messages
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useMessages(conversationId ?? "");
 
@@ -124,25 +146,38 @@ export default function ChatRoom({
 
   const sendDirect = useSendDirectMessage();
   const sendGroup = useSendGroupMessage();
+
   const { mutate: markAsSeen } = useMarkAsSeen();
+
   const sending = sendDirect.isPending || sendGroup.isPending;
 
-  // Đánh dấu đã xem khi còn tin chưa đọc
+  // Mark as seen
   const unread = me?._id ? (conversation?.unreadCounts?.[String(me._id)] ?? 0) : 0;
-  useEffect(() => {
-    if (conversationId && unread > 0) markAsSeen(conversationId);
-  }, [conversationId, unread]); // eslint-disable-line
 
-  // Người còn lại đã xem tin cuối của mình chưa
+  useEffect(() => {
+    if (conversationId && unread > 0) {
+      markAsSeen(conversationId);
+    }
+  }, [conversationId, unread]);
+
+  // Seen status
   const seenByOthers = !!conversation?.seenBy?.some(
     (u) => String(u._id) !== String(me?._id),
   );
+
   const lastMessageId = conversation?.lastMessage?._id;
+
+  // ========================================
+  // SEND MESSAGE
+  // ========================================
 
   const send = async () => {
     const value = text.trim();
+
     if (!value || sending) return;
+
     setText("");
+
     try {
       if (isGroup) {
         await sendGroup.mutateAsync({
@@ -155,6 +190,7 @@ export default function ChatRoom({
           recipientId: effectiveRecipientId,
           content: value,
         });
+
         if (!conversationId && msg?.conversationId) {
           onConversationCreated?.(String(msg.conversationId));
         }
@@ -164,27 +200,32 @@ export default function ChatRoom({
     }
   };
 
+  // ========================================
+  // RENDER MESSAGE
+  // ========================================
+
   const renderItem = useCallback(
     ({ item, index }: { item: Message; index: number }) => {
       const mine = String(item.senderId) === String(me?._id);
+
       const sender = participantMap.get(item.senderId);
 
-      // list inverted: index + 1 = tin cũ hơn, index - 1 = tin mới hơn
+      // Inverted list
       const older = messages[index + 1];
       const newer = messages[index - 1];
+
       const firstOfCluster = older?.senderId !== item.senderId;
+
       const lastOfCluster = newer?.senderId !== item.senderId;
 
       return (
         <View
-          style={[
-            styles.msgRow,
-            mine && { justifyContent: "flex-end" },
-            !lastOfCluster && { marginBottom: 3 },
-          ]}
+          className={`mb-[10px] flex-row items-end px-3 ${
+            mine ? "justify-end" : "justify-start"
+          } ${!lastOfCluster ? "mb-[3px]" : ""}`}
         >
           {!mine && (
-            <View style={styles.msgAvatarSlot}>
+            <View className="mr-1.5 w-7">
               {lastOfCluster && (
                 <Avatar
                   uri={sender?.avatarUrl}
@@ -194,40 +235,56 @@ export default function ChatRoom({
             </View>
           )}
 
-          <View style={{ maxWidth: "78%" }}>
+          <View className="max-w-[78%]">
             <View
-              style={[styles.bubble, mine ? styles.bubbleMe : styles.bubbleOther]}
+              className={`rounded-2xl px-3 pt-2.5 pb-1.5 ${
+                mine
+                  ? "rounded-br-md bg-[#3B2FD0]"
+                  : "rounded-bl-md border border-slate-100 bg-white"
+              }`}
             >
+              {/* Group sender name */}
               {isGroup && !mine && firstOfCluster && !!sender?.displayName && (
-                <Text style={styles.senderName}>{sender.displayName}</Text>
+                <Text className="mb-1 text-xs font-bold text-[#5144E4]">
+                  {sender.displayName}
+                </Text>
               )}
 
+              {/* Image */}
               {!!item.imgUrl && (
                 <Image
                   source={{ uri: item.imgUrl }}
-                  style={[
-                    styles.filePreview,
-                    { width: 230, borderRadius: 10, marginBottom: 6 },
-                  ]}
+                  className="mb-1.5 h-[150px] w-[230px] rounded-xl bg-gray-200"
+                  resizeMode="cover"
                 />
               )}
 
+              {/* Message content */}
               {!!item.content && (
-                <Text style={[styles.msgText, mine && styles.msgTextMe]}>
+                <Text
+                  className={`text-sm leading-5 ${
+                    mine ? "font-medium text-white" : "text-slate-800"
+                  }`}
+                >
                   {item.content}
                 </Text>
               )}
 
-              <View style={[styles.metaRow, { justifyContent: "flex-end" }]}>
-                <Text style={[styles.time, mine && { color: "#D6D3FF" }]}>
+              {/* Time + seen */}
+              <View className="mt-1 flex-row items-center justify-end gap-1">
+                <Text
+                  className={`text-[11px] ${
+                    mine ? "text-[#D6D3FF]" : "text-gray-400"
+                  }`}
+                >
                   {formatTime(item.createdAt)}
                 </Text>
+
                 {mine && item._id === lastMessageId && (
                   <Ionicons
                     name={seenByOthers ? "checkmark-done" : "checkmark"}
                     size={14}
                     color="#9AD7FF"
-                    style={{ marginLeft: 4 }}
                   />
                 )}
               </View>
@@ -239,26 +296,36 @@ export default function ChatRoom({
     [messages, me?._id, participantMap, isGroup, lastMessageId, seenByOthers],
   );
 
+  // ========================================
+  // UI
+  // ========================================
+
   return (
     <SafeAreaView
-      style={styles.safe}
+      className="flex-1 bg-white"
       edges={["top", "bottom"]}
     >
-      {/* Contact row */}
-      <View style={styles.contactRow}>
+      {/* ================================== */}
+      {/* HEADER */}
+      {/* ================================== */}
+
+      <View className="flex-row items-center border-b border-slate-100 bg-white px-4 py-3">
+        {/* Back */}
         <TouchableOpacity
           onPress={onBack}
           hitSlop={10}
-          style={{ marginRight: 12 }}
+          className="mr-3 h-9 w-9 items-center justify-center rounded-full active:bg-slate-100"
         >
           <Ionicons
             name="chevron-back"
             size={24}
-            color={COLORS.text}
+            color="#1B1B2F"
           />
         </TouchableOpacity>
+
+        {/* Avatar */}
         {isGroup ? (
-          <View style={[styles.contactAvatar, styles.groupAvatar]}>
+          <View className="h-11 w-11 items-center justify-center rounded-full bg-[#EEEBFF]">
             <Ionicons
               name="people"
               size={24}
@@ -271,81 +338,105 @@ export default function ChatRoom({
             size={44}
           />
         )}
-        <View style={styles.contactInfo}>
+
+        {/* Contact information */}
+        <View className="ml-3 min-w-0 flex-1">
           <Text
-            style={styles.contactName}
+            className="text-base font-bold text-slate-900"
             numberOfLines={1}
           >
             {title}
           </Text>
+
           {isGroup && (
-            <Text style={styles.statusText}>{memberCount} thành viên</Text>
+            <Text className="mt-0.5 text-xs text-slate-500">
+              {memberCount} thành viên
+            </Text>
           )}
         </View>
-        <View style={styles.actions}>
+
+        {/* Actions */}
+        <View className="flex-row items-center gap-2">
           {!isGroup && (
             <>
-              <TouchableOpacity style={styles.actionBtn}>
+              <TouchableOpacity className="h-9 w-9 items-center justify-center rounded-xl bg-slate-50 active:bg-slate-100">
                 <Ionicons
                   name="call-outline"
                   size={18}
-                  color={COLORS.text}
+                  color="#374151"
                 />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.actionBtn}>
+
+              <TouchableOpacity className="h-9 w-9 items-center justify-center rounded-xl bg-slate-50 active:bg-slate-100">
                 <Ionicons
                   name="videocam-outline"
                   size={20}
-                  color={COLORS.text}
+                  color="#374151"
                 />
               </TouchableOpacity>
             </>
           )}
-          <TouchableOpacity style={styles.actionBtn}>
+
+          <TouchableOpacity className="h-9 w-9 items-center justify-center rounded-xl bg-slate-50 active:bg-slate-100">
             <Ionicons
               name="information-circle-outline"
               size={20}
-              color={COLORS.text}
+              color="#374151"
             />
           </TouchableOpacity>
         </View>
       </View>
 
+      {/* ================================== */}
+      {/* CHAT CONTENT */}
+      {/* ================================== */}
+
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        className="flex-1"
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         {isLoading && !!conversationId ? (
-          <ActivityIndicator
-            style={{ flex: 1 }}
-            color={COLORS.primary}
-          />
+          <View className="flex-1 items-center justify-center bg-white">
+            <ActivityIndicator
+              size="large"
+              color={COLORS.primary}
+            />
+          </View>
         ) : (
           <FlatList
             data={messages}
             inverted
             keyExtractor={(m) => m._id}
             renderItem={renderItem}
-            onEndReached={() =>
-              hasNextPage && !isFetchingNextPage && fetchNextPage()
-            }
+            onEndReached={() => {
+              if (hasNextPage && !isFetchingNextPage) {
+                fetchNextPage();
+              }
+            }}
             onEndReachedThreshold={0.3}
             ListFooterComponent={
               isFetchingNextPage ? (
-                <ActivityIndicator color={COLORS.primary} />
+                <ActivityIndicator
+                  color={COLORS.primary}
+                  className="my-2"
+                />
               ) : null
             }
             ListEmptyComponent={
               !isLoading ? (
-                <Text
-                  style={{
-                    textAlign: "center",
-                    color: COLORS.sub,
-                    transform: [{ scaleY: -1 }],
-                  }}
-                >
-                  Hãy bắt đầu cuộc trò chuyện 👋
-                </Text>
+                <View className="flex-1 items-center justify-center py-8">
+                  <View className="mb-3 h-16 w-16 items-center justify-center rounded-full bg-[#EEEBFF]">
+                    <Ionicons
+                      name="chatbubbles-outline"
+                      size={30}
+                      color={COLORS.primary}
+                    />
+                  </View>
+
+                  <Text className="text-sm font-semibold text-slate-600">
+                    Hãy bắt đầu cuộc trò chuyện 👋
+                  </Text>
+                </View>
               ) : null
             }
             showsVerticalScrollIndicator={false}
@@ -353,42 +444,55 @@ export default function ChatRoom({
           />
         )}
 
-        {/* Input bar */}
-        <View style={styles.inputBar}>
-          <TouchableOpacity hitSlop={8}>
+        {/* ================================== */}
+        {/* INPUT BAR */}
+        {/* ================================== */}
+
+        <View className="flex-row items-center gap-2.5 border-t border-slate-100 bg-white px-3 py-2">
+          {/* Attachment */}
+          <TouchableOpacity
+            hitSlop={8}
+            className="h-10 w-9 items-center justify-center"
+          >
             <Ionicons
               name="attach"
               size={24}
-              color={COLORS.sub}
+              color="#6B7280"
             />
           </TouchableOpacity>
-          <View style={styles.inputWrap}>
+
+          {/* Input container */}
+          <View className="h-[44px] flex-1 flex-row items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3">
             <TouchableOpacity hitSlop={8}>
               <Ionicons
                 name="happy-outline"
                 size={22}
-                color={COLORS.sub}
+                color="#6B7280"
               />
             </TouchableOpacity>
+
             <TextInput
               value={text}
               onChangeText={setText}
               placeholder="Nhập tin nhắn..."
-              placeholderTextColor={COLORS.sub}
-              style={styles.input}
+              placeholderTextColor="#9CA3AF"
+              className="flex-1 py-0 text-sm text-slate-900"
               onSubmitEditing={send}
               returnKeyType="send"
             />
+
             <TouchableOpacity hitSlop={8}>
               <Ionicons
                 name="camera-outline"
                 size={22}
-                color={COLORS.sub}
+                color="#6B7280"
               />
             </TouchableOpacity>
           </View>
+
+          {/* Send button */}
           <TouchableOpacity
-            style={styles.micBtn}
+            className="h-11 w-11 items-center justify-center rounded-full bg-[#3B2FD0] active:bg-[#3025B5]"
             onPress={send}
             disabled={sending}
           >
@@ -410,190 +514,3 @@ export default function ChatRoom({
     </SafeAreaView>
   );
 }
-
-// Thêm vào StyleSheet:
-//   avatarPlaceholder: { backgroundColor: COLORS.primarySoft, alignItems: "center", justifyContent: "center" },
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.bg },
-
-  avatarPlaceholder: {
-    backgroundColor: COLORS.primarySoft,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  /* Contact */
-  contactRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: COLORS.card,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  contactAvatar: { width: 44, height: 44, borderRadius: 22 },
-  groupAvatar: {
-    backgroundColor: COLORS.primarySoft,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  onlineDot: {
-    position: "absolute",
-    right: 0,
-    bottom: 0,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: COLORS.online,
-    borderWidth: 2,
-    borderColor: "#fff",
-  },
-  contactInfo: { flex: 1, marginLeft: 10 },
-  nameRow: { flexDirection: "row", alignItems: "center" },
-  contactName: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: COLORS.text,
-    flexShrink: 1,
-  },
-  statusRow: { flexDirection: "row", alignItems: "center", marginTop: 2 },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: COLORS.online,
-    marginRight: 5,
-  },
-  statusText: { fontSize: 12, color: COLORS.sub, marginTop: 2 },
-  actions: { flexDirection: "row", gap: 8 },
-  actionBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    backgroundColor: COLORS.bg,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  dateWrap: { alignItems: "center", marginVertical: 12 },
-  dateText: {
-    fontSize: 11,
-    color: COLORS.sub,
-    backgroundColor: COLORS.card,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-    overflow: "hidden",
-  },
-
-  /* Messages */
-  msgRow: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    paddingHorizontal: 12,
-    marginBottom: 10,
-  },
-  msgAvatarSlot: { width: 28, marginRight: 6 },
-  msgAvatar: { width: 24, height: 24, borderRadius: 12 },
-  bubble: {
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingTop: 10,
-    paddingBottom: 6,
-  },
-  bubbleOther: { backgroundColor: COLORS.card },
-  bubbleMe: { backgroundColor: COLORS.primary },
-  senderName: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: COLORS.primary,
-    marginBottom: 2,
-  },
-  msgText: { fontSize: 14, lineHeight: 20, color: COLORS.text },
-  msgTextMe: { color: "#fff", fontWeight: "600" },
-  metaRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 4,
-    gap: 12,
-  },
-  timeRow: { flexDirection: "row", alignItems: "center" },
-  time: { fontSize: 11, color: COLORS.sub },
-  reaction: {
-    backgroundColor: COLORS.primarySoft,
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  reactionText: { fontSize: 11, color: COLORS.text },
-
-  /* File card */
-  fileCard: { borderRadius: 10, overflow: "hidden", marginBottom: 8, width: 230 },
-  filePreview: { width: "100%", height: 120, backgroundColor: "#ddd" },
-  fileNameBar: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.55)",
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    gap: 6,
-  },
-  fileName: { color: "#fff", fontSize: 12, flex: 1 },
-
-  /* Typing */
-  typingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    marginTop: 4,
-  },
-  typingAvatar: { width: 24, height: 24, borderRadius: 12, marginRight: 8 },
-  typingPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.card,
-    borderRadius: 14,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  typingText: { fontSize: 12, color: COLORS.sub },
-  typingDots: { fontSize: 12, color: COLORS.primary, fontWeight: "700" },
-
-  /* Input */
-  inputBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    gap: 10,
-    backgroundColor: COLORS.card,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-  },
-  inputWrap: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    height: 42,
-    borderRadius: 21,
-    paddingHorizontal: 12,
-    backgroundColor: COLORS.bg,
-    gap: 8,
-  },
-  input: { flex: 1, fontSize: 14, color: COLORS.text },
-  micBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: COLORS.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});

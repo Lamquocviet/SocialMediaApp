@@ -1,13 +1,17 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
   Image,
   Pressable,
   ActivityIndicator,
-  StyleSheet,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import type { AxiosError } from "axios";
+import SendRequestModal from "@/components/friendModals/SendRequestModal";
+import ConfirmModal from "@/components/friendModals/ConfirmModal";
+
 import type { SearchUser } from "@/hooks/useUserSearch";
 import {
   useSendFriendRequest,
@@ -17,18 +21,22 @@ import {
 
 type Props = {
   user: SearchUser;
-  receivedCreatedAt?: string; // lấy từ useFriendRequests().received
+  receivedCreatedAt?: string;
   onMessage?: (user: SearchUser) => void;
 };
 
 export function timeAgo(iso?: string) {
   if (!iso) return "";
+
   const diff = Math.max(0, Date.now() - new Date(iso).getTime());
   const m = Math.floor(diff / 60000);
+
   if (m < 1) return "vừa xong";
   if (m < 60) return `${m} phút trước`;
+
   const h = Math.floor(m / 60);
   if (h < 24) return `${h} giờ trước`;
+
   return `${Math.floor(h / 24)} ngày trước`;
 }
 
@@ -43,188 +51,151 @@ export default function UserSearchResultCard({
   const cancel = useDeclineFriendRequest();
 
   const status = user.friendshipStatus;
+  const [sendOpen, setSendOpen] = useState(false);
+  const [declineOpen, setDeclineOpen] = useState(false);
   const isReceived = status === "request_received";
   const initials = user.displayName?.trim()?.[0]?.toUpperCase() ?? "?";
 
+  const errorMessage = (err: unknown, fallback: string) =>
+    (err as AxiosError<{ message?: string }>)?.response?.data?.message ?? fallback;
+
+  const handleSend = (message: string) => {
+    send.mutate(
+      { to: user._id, message: message || undefined },
+      {
+        onSuccess: () => setSendOpen(false),
+        onError: (err) => {
+          setSendOpen(false);
+          Alert.alert("Lỗi", errorMessage(err, "Không thể gửi lời mời."));
+        },
+      },
+    );
+  };
+
+  const handleConfirmDecline = () => {
+    if (!user.requestId) return;
+    decline.mutate(user.requestId, {
+      onSuccess: () => setDeclineOpen(false),
+      onError: (err) => {
+        setDeclineOpen(false);
+        Alert.alert("Lỗi", errorMessage(err, "Không thể từ chối lời mời."));
+      },
+    });
+  };
+
+  const handleAccept = () => {
+    if (!user.requestId) return;
+    accept.mutate(user.requestId, {
+      onError: (err) =>
+        Alert.alert("Lỗi", errorMessage(err, "Không thể chấp nhận lời mời.")),
+    });
+  };
   return (
-    <Pressable
-      style={({ pressed }) => [
-        styles.card,
-        pressed && status === "friends" && styles.cardPressed,
-      ]}
-      disabled={status !== "friends"}
-      onPress={() => onMessage?.(user)}
-    >
-      <View style={styles.row}>
-        {/* Avatar + chấm online */}
-        <View style={styles.avatarWrap}>
-          {user.avatarUrl ? (
-            <Image
-              source={{ uri: user.avatarUrl }}
-              style={styles.avatar}
-            />
-          ) : (
-            <View style={[styles.avatar, styles.avatarFallback]}>
-              <Text style={styles.avatarText}>{initials}</Text>
-            </View>
-          )}
-          {user.isOnline !== undefined && (
-            <View
-              style={[
-                styles.dot,
-                { backgroundColor: user.isOnline ? "#22C55E" : "#9CA3AF" },
-              ]}
-            />
-          )}
-        </View>
-
-        {/* Thông tin */}
-        <View style={styles.info}>
-          <View style={styles.nameRow}>
-            <Text
-              style={styles.name}
-              numberOfLines={1}
-            >
-              {user.displayName}
-            </Text>
-            {user.title && !isReceived && status !== "friends" && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{user.title}</Text>
-              </View>
-            )}
-            {status === "friends" && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>Bạn bè</Text>
-              </View>
-            )}
-            {isReceived && (
-              <View style={[styles.badge, styles.badgeInvite]}>
-                <Ionicons
-                  name="mail-outline"
-                  size={11}
-                  color="#4C1D95"
-                />
-                <Text style={styles.badgeText}>Lời mời</Text>
-              </View>
-            )}
-          </View>
-          <Text
-            style={styles.username}
-            numberOfLines={1}
-          >
-            @{user.username}
-          </Text>
-          {user.isOnline !== undefined && (
-            <View style={styles.statusRow}>
-              <View
-                style={[
-                  styles.smallDot,
-                  { backgroundColor: user.isOnline ? "#22C55E" : "#9CA3AF" },
-                ]}
-              />
-              <Text
-                style={[
-                  styles.statusText,
-                  { color: user.isOnline ? "#15803D" : "#6B7280" },
-                ]}
-              >
-                {user.isOnline
-                  ? "Đang hoạt động"
-                  : (user.lastActiveText ?? "Ngoại tuyến")}
-              </Text>
-            </View>
-          )}
-        </View>
-
-        {/* Hành động bên phải */}
-        {status === "not_friends" && (
-          <Pressable
-            style={[styles.btn, styles.btnPrimary]}
-            disabled={send.isPending}
-            onPress={() => send.mutate({ to: user._id })}
-          >
-            {send.isPending ? (
-              <ActivityIndicator
-                size="small"
-                color="#fff"
+    <>
+      <Pressable
+        className={`mb-3 rounded-[18px] border-[1.5px] border-[#D6D1FA] bg-[#F4F2FF] p-[14px] shadow-md ${
+          status === "friends" ? "active:bg-[#EBE8FE]" : ""
+        }`}
+        disabled={status !== "friends"}
+        onPress={() => onMessage?.(user)}
+      >
+        <View className="flex-row items-center gap-[10px]">
+          {/* Avatar + online status */}
+          <View className="relative h-12 w-12">
+            {user.avatarUrl ? (
+              <Image
+                source={{ uri: user.avatarUrl }}
+                className="h-12 w-12 rounded-full"
               />
             ) : (
-              <>
-                <Ionicons
-                  name="person-add-outline"
-                  size={17}
-                  color="#fff"
-                />
-                <Text style={styles.btnPrimaryText}>Kết bạn</Text>
-              </>
+              <View className="h-12 w-12 items-center justify-center rounded-full bg-indigo-100">
+                <Text className="text-lg font-bold text-indigo-800">{initials}</Text>
+              </View>
             )}
-          </Pressable>
-        )}
 
-        {status === "request_sent" && (
-          <View style={styles.sentWrap}>
-            <Ionicons
-              name="paper-plane-outline"
-              size={13}
-              color="#6B7280"
-            />
-            <Text style={styles.sentText}>Đã gửi lời mời</Text>
-            <Pressable
-              style={styles.cancelBtn}
-              disabled={cancel.isPending || !user.requestId}
-              onPress={() => user.requestId && cancel.mutate(user.requestId)}
-            >
-              {cancel.isPending ? (
-                <ActivityIndicator
-                  size="small"
-                  color="#DC2626"
-                />
-              ) : (
-                <Ionicons
-                  name="close"
-                  size={20}
-                  color="#DC2626"
-                />
+            {user.isOnline !== undefined && (
+              <View
+                className={`absolute bottom-0 right-0 h-[13px] w-[13px] rounded-full border-2 border-[#F4F2FF] ${
+                  user.isOnline ? "bg-green-500" : "bg-gray-400"
+                }`}
+              />
+            )}
+          </View>
+
+          {/* User information */}
+          <View className="min-w-0 flex-1">
+            <View className="flex-row items-center gap-1.5">
+              <Text
+                className="shrink text-[17px] font-bold text-gray-900"
+                numberOfLines={1}
+              >
+                {user.displayName}
+              </Text>
+
+              {user.title && !isReceived && status !== "friends" && (
+                <View className="rounded-md bg-[#E2DDFD] px-1.5 py-0.5">
+                  <Text className="text-[10px] font-semibold text-purple-900">
+                    {user.title}
+                  </Text>
+                </View>
               )}
-            </Pressable>
-          </View>
-        )}
 
-        {status === "friends" && (
-          <Pressable
-            style={[styles.btn, styles.btnMessage]}
-            onPress={() => onMessage?.(user)}
-          >
-            <Ionicons
-              name="chatbubble"
-              size={15}
-              color="#3730A3"
-            />
-            <Text style={styles.btnMessageText}>Nhắn tin</Text>
-          </Pressable>
-        )}
-      </View>
+              {status === "friends" && (
+                <View className="rounded-md bg-[#E2DDFD] px-1.5 py-0.5">
+                  <Text className="text-[10px] font-semibold text-purple-900">
+                    Bạn bè
+                  </Text>
+                </View>
+              )}
 
-      {/* Lời mời nhận được: banner + 2 nút */}
-      {isReceived && user.requestId && (
-        <>
-          <View style={styles.banner}>
-            <Ionicons
-              name="information-circle-outline"
-              size={16}
-              color="#4338CA"
-            />
-            <Text style={styles.bannerText}>
-              Đã gửi lời mời kết bạn cho bạn {timeAgo(receivedCreatedAt)}
-            </Text>
-          </View>
-          <View style={styles.actionRow}>
-            <Pressable
-              style={[styles.bigBtn, styles.acceptBtn]}
-              disabled={accept.isPending || decline.isPending}
-              onPress={() => accept.mutate(user.requestId!)}
+              {isReceived && (
+                <View className="flex-row items-center gap-1 rounded-md bg-[#E4DDFB] px-1.5 py-0.5">
+                  <Ionicons
+                    name="mail-outline"
+                    size={11}
+                    color="#4C1D95"
+                  />
+                  <Text className="text-[10px] font-semibold text-purple-900">
+                    Lời mời
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            <Text
+              className="mt-px text-xs text-gray-500"
+              numberOfLines={1}
             >
-              {accept.isPending ? (
+              @{user.username}
+            </Text>
+
+            {user.isOnline !== undefined && (
+              <View className="mt-[3px] flex-row items-center gap-1">
+                <View
+                  className={`h-1.5 w-1.5 rounded-full ${
+                    user.isOnline ? "bg-green-500" : "bg-gray-400"
+                  }`}
+                />
+                <Text
+                  className={`text-[11px] font-medium ${
+                    user.isOnline ? "text-green-700" : "text-gray-500"
+                  }`}
+                >
+                  {user.isOnline
+                    ? "Đang hoạt động"
+                    : (user.lastActiveText ?? "Ngoại tuyến")}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {/* Action buttons */}
+          {status === "not_friends" && (
+            <Pressable
+              className="h-10 flex-row items-center justify-center gap-1.5 rounded-xl bg-[#3B2FC9] px-3.5 active:opacity-80"
+              onPress={() => setSendOpen(true)}
+            >
+              {send.isPending ? (
                 <ActivityIndicator
                   size="small"
                   color="#fff"
@@ -232,150 +203,147 @@ export default function UserSearchResultCard({
               ) : (
                 <>
                   <Ionicons
-                    name="checkmark"
-                    size={18}
+                    name="person-add-outline"
+                    size={17}
                     color="#fff"
                   />
-                  <Text style={styles.acceptText}>Đồng ý</Text>
+                  <Text className="text-sm font-bold text-white">Kết bạn</Text>
                 </>
               )}
             </Pressable>
-            <Pressable
-              style={[styles.bigBtn, styles.declineBtn]}
-              disabled={accept.isPending || decline.isPending}
-              onPress={() => decline.mutate(user.requestId!)}
-            >
-              {decline.isPending ? (
-                <ActivityIndicator
-                  size="small"
-                  color="#DC2626"
-                />
-              ) : (
-                <>
-                  <Ionicons
-                    name="close"
-                    size={18}
+          )}
+
+          {status === "request_sent" && (
+            <View className="flex-row items-center gap-1">
+              <Ionicons
+                name="paper-plane-outline"
+                size={13}
+                color="#6B7280"
+              />
+              <Text className="mr-1 text-xs text-gray-500">Đã gửi lời mời</Text>
+
+              <Pressable
+                className="h-[42px] w-[42px] items-center justify-center rounded-xl bg-red-100 active:opacity-70"
+                disabled={cancel.isPending || !user.requestId}
+                onPress={() => user.requestId && cancel.mutate(user.requestId)}
+              >
+                {cancel.isPending ? (
+                  <ActivityIndicator
+                    size="small"
                     color="#DC2626"
                   />
-                  <Text style={styles.declineText}>Từ chối</Text>
-                </>
-              )}
+                ) : (
+                  <Ionicons
+                    name="close"
+                    size={20}
+                    color="#DC2626"
+                  />
+                )}
+              </Pressable>
+            </View>
+          )}
+
+          {status === "friends" && (
+            <Pressable
+              className="h-10 flex-row items-center justify-center gap-1.5 rounded-xl bg-[#E0E0FB] px-3.5 active:opacity-80"
+              onPress={() => onMessage?.(user)}
+            >
+              <Ionicons
+                name="chatbubble"
+                size={15}
+                color="#3730A3"
+              />
+              <Text className="text-sm font-bold text-indigo-800">Nhắn tin</Text>
             </Pressable>
-          </View>
-        </>
-      )}
-    </Pressable>
+          )}
+        </View>
+
+        {/* Received friend request */}
+        {isReceived && user.requestId && (
+          <>
+            <View className="mt-3 flex-row items-center gap-2 rounded-[10px] border border-[#E4E0FB] bg-white px-3 py-2.5">
+              <Ionicons
+                name="information-circle-outline"
+                size={16}
+                color="#4338CA"
+              />
+              <Text className="flex-1 text-xs text-indigo-800">
+                Đã gửi lời mời kết bạn cho bạn {timeAgo(receivedCreatedAt)}
+              </Text>
+            </View>
+
+            <View className="mt-3 flex-row gap-2.5">
+              <Pressable
+                className="h-11 flex-1 flex-row items-center justify-center gap-1.5 rounded-[10px] bg-[#0B6B4D] active:opacity-80"
+                disabled={accept.isPending || decline.isPending}
+                onPress={handleAccept}
+              >
+                {accept.isPending ? (
+                  <ActivityIndicator
+                    size="small"
+                    color="#fff"
+                  />
+                ) : (
+                  <>
+                    <Ionicons
+                      name="checkmark"
+                      size={18}
+                      color="#fff"
+                    />
+                    <Text className="text-sm font-bold text-white">Đồng ý</Text>
+                  </>
+                )}
+              </Pressable>
+
+              <Pressable
+                className="h-11 flex-1 flex-row items-center justify-center gap-1.5 rounded-[10px] bg-red-100 active:opacity-80"
+                disabled={accept.isPending || decline.isPending}
+                onPress={() => setDeclineOpen(true)}
+              >
+                {decline.isPending ? (
+                  <ActivityIndicator
+                    size="small"
+                    color="#DC2626"
+                  />
+                ) : (
+                  <>
+                    <Ionicons
+                      name="close"
+                      size={18}
+                      color="#DC2626"
+                    />
+                    <Text className="text-sm font-bold text-red-600">Từ chối</Text>
+                  </>
+                )}
+              </Pressable>
+            </View>
+          </>
+        )}
+      </Pressable>
+      <SendRequestModal
+        visible={sendOpen}
+        displayName={user.displayName}
+        username={user.username}
+        loading={send.isPending}
+        onCancel={() => setSendOpen(false)}
+        onSend={handleSend}
+      />
+
+      <ConfirmModal
+        visible={declineOpen}
+        title="Từ chối lời mời?"
+        description={
+          <>
+            Bạn có chắc muốn từ chối lời mời kết bạn từ{" "}
+            <Text className="font-bold text-gray-900">{user.displayName}</Text> (@
+            {user.username}) không?
+          </>
+        }
+        confirmText="Từ chối"
+        loading={decline.isPending}
+        onCancel={() => setDeclineOpen(false)}
+        onConfirm={handleConfirmDecline}
+      />
+    </>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: "#F4F2FF", // nền tím nhạt
-    borderRadius: 18,
-    borderWidth: 1.5,
-    borderColor: "#D6D1FA", // khung tím
-    padding: 14,
-    marginBottom: 12,
-
-    shadowColor: "#5144E4", // bóng đổ ánh tím
-    shadowOpacity: 0.14,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
-  },
-  cardPressed: {
-    backgroundColor: "#EBE8FE",
-    borderColor: "#B9B2F5",
-    transform: [{ scale: 0.99 }],
-  },
-  row: { flexDirection: "row", alignItems: "center", gap: 10 },
-  avatarWrap: { width: 48, height: 48 },
-  avatar: { width: 48, height: 48, borderRadius: 24 },
-  avatarFallback: {
-    backgroundColor: "#E0E7FF",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarText: { fontSize: 18, fontWeight: "700", color: "#3730A3" },
-  dot: {
-    position: "absolute",
-    right: 0,
-    bottom: 0,
-    width: 13,
-    height: 13,
-    borderRadius: 7,
-    borderWidth: 2,
-    borderColor: "#F4F2FF", // trùng màu nền card (trước là #fff)
-  },
-  info: { flex: 1, minWidth: 0 },
-  nameRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  name: { flexShrink: 1, fontSize: 17, fontWeight: "700", color: "#111827" },
-  badge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
-    backgroundColor: "#E2DDFD",
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  badgeInvite: { backgroundColor: "#E4DDFB" },
-  badgeText: { fontSize: 10, fontWeight: "600", color: "#4C1D95" },
-  username: { fontSize: 12, color: "#6B7280", marginTop: 1 },
-  statusRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 3 },
-  smallDot: { width: 6, height: 6, borderRadius: 3 },
-  statusText: { fontSize: 11, fontWeight: "500" },
-
-  btn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    height: 40,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-  },
-  btnPrimary: { backgroundColor: "#3B2FC9" },
-  btnPrimaryText: { color: "#fff", fontWeight: "700", fontSize: 14 },
-  btnMessage: { backgroundColor: "#E0E0FB" },
-  btnMessageText: { color: "#3730A3", fontWeight: "700", fontSize: 14 },
-
-  sentWrap: { flexDirection: "row", alignItems: "center", gap: 4 },
-  sentText: { fontSize: 12, color: "#6B7280", marginRight: 4 },
-  cancelBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    backgroundColor: "#FEE2E2",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  banner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: "#fff", // trắng nổi bật trên nền tím
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginTop: 12,
-    borderWidth: 1,
-    borderColor: "#E4E0FB",
-  },
-  bannerText: { flex: 1, fontSize: 12, color: "#3730A3" },
-  actionRow: { flexDirection: "row", gap: 10, marginTop: 12 },
-  bigBtn: {
-    flex: 1,
-    height: 44,
-    borderRadius: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-  },
-  acceptBtn: { backgroundColor: "#0B6B4D" },
-  acceptText: { color: "#fff", fontWeight: "700", fontSize: 14 },
-  declineBtn: { backgroundColor: "#FEE2E2" },
-  declineText: { color: "#DC2626", fontWeight: "700", fontSize: 14 },
-});

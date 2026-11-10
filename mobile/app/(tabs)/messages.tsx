@@ -8,9 +8,9 @@ import {
   Pressable,
   ActivityIndicator,
   RefreshControl,
-  StyleSheet,
   Keyboard,
 } from "react-native";
+
 import { useMe } from "@/hooks/useMe";
 import type { Conversation } from "@/types/chat";
 import ConversationItem from "@/components/ConversationItem";
@@ -23,45 +23,46 @@ import type { SearchUser } from "@/hooks/useUserSearch";
 
 type ChatTab = "all" | "direct" | "group";
 
-// ========================================
-// COMPONENT
-// ========================================
-
 export default function ChatListScreen() {
   const { data: me } = useMe();
   const router = useRouter();
   const createConversation = useCreateConversation();
+
   const currentUserId = me?._id;
+
   const [activeTab, setActiveTab] = useState<ChatTab>("all");
   const [search, setSearch] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const [opening, setOpening] = useState(false);
+
   const isSearching = searchFocused || search.trim().length > 0;
 
   const { data, isLoading, isError, refetch, isRefetching } = useConversations();
 
+  const conversations = data?.conversations ?? [];
+
+  // Open chat with user
   const openChatWith = async (user: SearchUser) => {
-    if (opening) return; // chặn bấm liên tục
+    if (opening) return;
+
     setOpening(true);
 
     try {
-      // 1. Tìm conversation direct đã có với user này
       let conversationId = conversations.find(
         (c) =>
           c.type === "direct" &&
           c.participants.some((p) => String(p._id) === String(user._id)),
       )?._id;
 
-      // 2. Chưa có thì tạo mới
       if (!conversationId) {
         const created = await createConversation.mutateAsync({
           type: "direct",
           memberIds: [user._id],
         });
+
         conversationId = created._id;
       }
 
-      // 3. Reset search rồi vào ChatRoom
       setSearch("");
       setSearchFocused(false);
       Keyboard.dismiss();
@@ -75,93 +76,71 @@ export default function ChatListScreen() {
           avatar: user.avatarUrl ?? "",
           recipientId: user._id,
         },
-      });
+      } as any);
     } catch (e) {
-      // TODO: hiện toast "Không thể mở cuộc trò chuyện"
+      // TODO: Show error toast
     } finally {
       setOpening(false);
     }
   };
-  // ========================================
-  // GET CONVERSATIONS
-  // ========================================
 
-  const conversations = data?.conversations ?? [];
-
-  // ========================================
-  // FILTER CONVERSATIONS
-  // ========================================
+  // Filter conversations
   const filteredConversations = useMemo(() => {
     return conversations.filter(
       (convo) => activeTab === "all" || convo.type === activeTab,
     );
   }, [conversations, activeTab]);
 
-  // ========================================
-  // RENDER CONVERSATION
-  // ========================================
-
-  const renderConversation = ({ item }: { item: Conversation }) => {
-    return (
-      <View style={styles.conversationItem}>
-        <ConversationItem
-          conversation={item}
-          currentUserId={currentUserId ?? ""}
-        />
-      </View>
-    );
-  };
-  // ========================================
-  // LOADING
-  // ========================================
-
+  // Loading
   if (isLoading || !currentUserId) {
     return (
-      <View style={styles.center}>
+      <View className="flex-1 items-center justify-center bg-white p-6">
         <ActivityIndicator
           size="large"
           color="#2563EB"
         />
-        <Text style={styles.loadingText}>Đang tải cuộc trò chuyện...</Text>
+
+        <Text className="mt-3 text-sm text-gray-500">
+          Đang tải cuộc trò chuyện...
+        </Text>
       </View>
     );
   }
 
-  // ========================================
-  // ERROR
-  // ========================================
-
+  // Error
   if (isError) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.errorText}>
+      <View className="flex-1 items-center justify-center bg-white p-6">
+        <Text className="text-center text-sm text-red-600">
           Không thể tải danh sách cuộc trò chuyện.
         </Text>
 
         <Pressable
-          style={styles.retryButton}
+          className="mt-4 rounded-lg bg-blue-600 px-5 py-2.5 active:bg-blue-700"
           onPress={() => refetch()}
         >
-          <Text style={styles.retryText}>Thử lại</Text>
+          <Text className="font-semibold text-white">Thử lại</Text>
         </Pressable>
       </View>
     );
   }
 
-  // ========================================
-  // HEADER
-  // ========================================
+  // Header
   const Header = (
-    <View style={styles.header}>
-      {!isSearching && <Text style={styles.title}>Tin nhắn</Text>}
+    <View className="px-4 pb-3 pt-4">
+      {!isSearching && (
+        <Text className="mb-4 text-2xl font-bold text-gray-900">Tin nhắn</Text>
+      )}
 
-      <View style={styles.searchRow}>
-        <View style={styles.searchBox}>
+      {/* Search */}
+      <View className="flex-row items-center gap-3">
+        <View className="h-11 flex-1 flex-row items-center gap-2 rounded-xl bg-gray-100 px-3">
           <Ionicons
             name="search"
             size={18}
             color="#9CA3AF"
           />
+
           <TextInput
             value={search}
             onChangeText={setSearch}
@@ -171,8 +150,9 @@ export default function ChatListScreen() {
             autoCapitalize="none"
             autoCorrect={false}
             returnKeyType="search"
-            style={styles.searchInput}
+            className="flex-1 py-0 text-sm text-gray-900"
           />
+
           {search.length > 0 && (
             <Pressable
               onPress={() => setSearch("")}
@@ -196,22 +176,20 @@ export default function ChatListScreen() {
             }}
             hitSlop={8}
           >
-            <Text style={styles.cancelText}>Hủy</Text>
+            <Text className="text-sm font-semibold text-blue-600">Hủy</Text>
           </Pressable>
         )}
       </View>
 
+      {/* Tabs */}
       {!isSearching && (
-        <View style={styles.tabs}>
+        <View className="mt-4 flex-row gap-2">
           {(
             [
               { key: "all", label: "Tất cả" },
               { key: "direct", label: "Cá nhân" },
               { key: "group", label: "Nhóm" },
-            ] as {
-              key: ChatTab;
-              label: string;
-            }[]
+            ] as { key: ChatTab; label: string }[]
           ).map((tab) => {
             const isActive = activeTab === tab.key;
 
@@ -219,9 +197,15 @@ export default function ChatListScreen() {
               <Pressable
                 key={tab.key}
                 onPress={() => setActiveTab(tab.key)}
-                style={[styles.tab, isActive && styles.activeTab]}
+                className={`rounded-full px-4 py-[9px] ${
+                  isActive ? "bg-blue-600" : "bg-gray-100"
+                }`}
               >
-                <Text style={[styles.tabText, isActive && styles.activeTabText]}>
+                <Text
+                  className={`text-[13px] font-medium ${
+                    isActive ? "text-white" : "text-gray-600"
+                  }`}
+                >
                   {tab.label}
                 </Text>
               </Pressable>
@@ -232,23 +216,36 @@ export default function ChatListScreen() {
     </View>
   );
 
+  // Empty list
   const EmptyList = (
-    <View style={styles.emptyContainer}>
-      <Text style={styles.emptyTitle}>Không tìm thấy cuộc trò chuyện</Text>
+    <View className="flex-1 items-center justify-center px-6 py-12">
+      <Text className="text-[15px] font-semibold text-gray-700">
+        Không tìm thấy cuộc trò chuyện
+      </Text>
 
-      <Text style={styles.emptyDescription}>
+      <Text className="mt-2 text-center text-[13px] text-gray-400">
         Thử thay đổi từ khóa tìm kiếm hoặc chọn tab khác.
       </Text>
     </View>
   );
 
-  // ========================================
-  // MAIN UI
-  // ========================================
+  // Render conversation
+  const renderConversation = ({ item }: { item: Conversation }) => {
+    return (
+      <View className="mx-[5px] my-[2px] overflow-hidden">
+        <ConversationItem
+          conversation={item}
+          currentUserId={currentUserId ?? ""}
+        />
+      </View>
+    );
+  };
 
+  // Main UI
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView className="flex-1 bg-white">
       {Header}
+
       {isSearching ? (
         <UserSearchResults
           query={search}
@@ -269,138 +266,10 @@ export default function ChatListScreen() {
           }
           showsVerticalScrollIndicator={false}
           contentContainerStyle={
-            filteredConversations.length === 0 ? styles.emptyListContent : undefined
+            filteredConversations.length === 0 ? { flexGrow: 1 } : undefined
           }
         />
       )}
     </SafeAreaView>
   );
 }
-
-// ========================================
-// STYLES
-// ========================================
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
-  conversationItem: {
-    marginHorizontal: 5,
-    marginVertical: 2,
-
-    overflow: "hidden",
-  },
-
-  center: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
-  },
-
-  loadingText: {
-    marginTop: 12,
-    color: "#6B7280",
-    fontSize: 14,
-  },
-
-  errorText: {
-    color: "#DC2626",
-    fontSize: 14,
-    textAlign: "center",
-  },
-
-  retryButton: {
-    marginTop: 16,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-    backgroundColor: "#2563EB",
-  },
-
-  retryText: {
-    color: "#FFFFFF",
-    fontWeight: "600",
-  },
-
-  header: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 12,
-  },
-
-  title: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#111827",
-    marginBottom: 16,
-  },
-
-  searchRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  searchBox: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    height: 44,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    backgroundColor: "#F3F4F6",
-  },
-  searchInput: { flex: 1, fontSize: 14, color: "#111827", paddingVertical: 0 },
-  cancelText: { fontSize: 14, fontWeight: "600", color: "#2563EB" },
-
-  tabs: {
-    flexDirection: "row",
-    marginTop: 16,
-    gap: 8,
-  },
-
-  tab: {
-    paddingHorizontal: 16,
-    paddingVertical: 9,
-    borderRadius: 20,
-    backgroundColor: "#F3F4F6",
-  },
-
-  activeTab: {
-    backgroundColor: "#2563EB",
-  },
-
-  tabText: {
-    color: "#4B5563",
-    fontSize: 13,
-    fontWeight: "500",
-  },
-
-  activeTabText: {
-    color: "#FFFFFF",
-  },
-
-  emptyListContent: {
-    flexGrow: 1,
-  },
-
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 24,
-    paddingVertical: 48,
-  },
-
-  emptyTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#374151",
-  },
-
-  emptyDescription: {
-    fontSize: 13,
-    color: "#9CA3AF",
-    textAlign: "center",
-    marginTop: 8,
-  },
-});

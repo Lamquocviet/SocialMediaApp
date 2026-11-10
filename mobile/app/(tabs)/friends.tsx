@@ -207,51 +207,61 @@ function ReceivedCard({ item }: { item: ReceivedRequest }) {
   };
 
   return (
-    <View className="bg-white rounded-[18px] p-3.5 mb-3 shadow-sm">
+    <View className="mb-4 rounded-2xl border border-[#E8E5F5] bg-white p-4 shadow-md shadow-indigo-900/10">
+      {/* User information */}
       <View className="flex-row items-center gap-3">
         <Avatar user={item.from} />
-        <View className="flex-1 min-w-0">
+
+        <View className="min-w-0 flex-1">
           <Text
-            className="text-[17px] font-bold text-gray-900"
+            className="text-base font-bold text-slate-900"
             numberOfLines={1}
           >
             {item.from.displayName}
           </Text>
-          <Text
-            className="text-sm text-gray-500 mt-0.5"
-            numberOfLines={1}
-          >
-            @{item.from.username}
-          </Text>
+          <Text className="mt-1 text-sm text-slate-500">@{item.from.username}</Text>
+        </View>
+
+        <View className="rounded-full bg-[#F1EEFF] px-3 py-1.5">
+          <Text className="text-xs font-bold text-[#5144E4]">Lời mời</Text>
         </View>
       </View>
 
+      {/* Invitation message */}
       {!!item.message && (
-        <View className="mt-3 bg-indigo-50 rounded-xl px-3 py-2.5">
-          <Text className="text-[15px] leading-[22px] text-gray-800">
+        <View className="mt-4 rounded-xl border border-[#EAE6FF] bg-[#F8F7FF] px-3.5 py-3">
+          <View className="mb-1 flex-row items-center gap-1.5">
+            <Ionicons
+              name="chatbubble-outline"
+              size={14}
+              color="#5144E4"
+            />
+            <Text className="text-xs font-semibold text-[#5144E4]">Lời nhắn</Text>
+          </View>
+
+          <Text className="text-sm leading-[22px] text-slate-700">
             “{item.message}”
           </Text>
         </View>
       )}
 
-      <View className="flex-row gap-2.5 mt-3">
-        {/* Từ chối: mở popup xác nhận, chưa gọi API */}
+      {/* Actions */}
+      <View className="mt-4 flex-row gap-3">
         <Pressable
-          className="flex-1 h-[46px] rounded-[14px] flex-row items-center justify-center gap-1.5 bg-indigo-100"
+          className="h-11 flex-1 flex-row items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-white active:bg-red-50"
           disabled={busy}
           onPress={() => setConfirmOpen(true)}
         >
           <Ionicons
             name="close"
-            size={16}
-            color="#4B5563"
+            size={17}
+            color="#DC2626"
           />
-          <Text className="text-gray-700 font-bold text-[15px]">Từ chối</Text>
+          <Text className="text-sm font-bold text-red-600">Từ chối</Text>
         </Pressable>
 
-        {/* Đồng ý: gọi API ngay */}
         <Pressable
-          className="flex-1 h-[46px] rounded-[14px] flex-row items-center justify-center gap-1.5 bg-[#5144E4]"
+          className="h-11 flex-1 flex-row items-center justify-center gap-1.5 rounded-xl bg-[#5144E4] active:bg-[#4033C7]"
           disabled={busy}
           onPress={handleAccept}
         >
@@ -264,10 +274,10 @@ function ReceivedCard({ item }: { item: ReceivedRequest }) {
             <>
               <Ionicons
                 name="checkmark"
-                size={16}
+                size={18}
                 color="#fff"
               />
-              <Text className="text-white font-bold text-[15px]">Đồng ý</Text>
+              <Text className="text-sm font-bold text-white">Đồng ý</Text>
             </>
           )}
         </Pressable>
@@ -292,29 +302,24 @@ function SentCard({ item }: { item: SentRequest }) {
   const cancel = useDeclineFriendRequest(); // API decline dùng chung cho huỷ lời mời
 
   return (
-    <View className="bg-white rounded-[18px] p-3.5 mb-3 shadow-sm">
+    <View className="mb-4 rounded-2xl border border-[#E8E5F5] bg-white p-4 shadow-md shadow-indigo-900/10">
       <View className="flex-row items-center gap-3">
         <Avatar user={item.to} />
 
-        <View className="flex-1 min-w-0">
+        <View className="min-w-0 flex-1">
           <Text
-            className="text-[17px] font-bold text-gray-900"
+            className="text-base font-bold text-slate-900"
             numberOfLines={1}
           >
             {item.to.displayName}
           </Text>
-          <Text
-            className="text-sm text-gray-500 mt-0.5"
-            numberOfLines={1}
-          >
-            @{item.to.username}
-          </Text>
+          <Text className="mt-1 text-sm text-slate-500">@{item.to.username}</Text>
         </View>
 
-        <View className="items-end self-start gap-1.5">
-          <View className="flex-row items-center gap-1.5 bg-indigo-100 rounded-[10px] px-2.5 py-1">
-            <View className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-            <Text className="text-xs font-bold text-indigo-600">Đang chờ</Text>
+        <View className="items-end gap-2">
+          <View className="flex-row items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1.5">
+            <View className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+            <Text className="text-xs font-bold text-amber-700">Đang chờ</Text>
           </View>
 
           <Pressable
@@ -328,17 +333,16 @@ function SentCard({ item }: { item: SentRequest }) {
                 color="#DC2626"
               />
             ) : (
-              <Text className="text-[11px] font-semibold text-red-600">
-                Hủy lời mời
-              </Text>
+              <Text className="text-xs font-semibold text-red-600">Hủy lời mời</Text>
             )}
           </Pressable>
         </View>
       </View>
 
       {!!item.message && (
-        <View className="mt-3 bg-indigo-50 rounded-xl px-3 py-2.5">
-          <Text className="text-[15px] leading-[22px] text-gray-800">
+        <View className="mt-4 rounded-xl border border-[#EAE6FF] bg-[#F8F7FF] px-3.5 py-3">
+          <Text className="mb-1 text-xs font-semibold text-[#5144E4]">Lời nhắn</Text>
+          <Text className="text-sm leading-[22px] text-slate-700">
             “{item.message}”
           </Text>
         </View>

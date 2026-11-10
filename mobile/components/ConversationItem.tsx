@@ -1,7 +1,6 @@
 import React from "react";
-import { View, Text, Image, Pressable, StyleSheet } from "react-native";
+import { View, Text, Image, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import type { Conversation } from "@/types/chat";
 
@@ -11,20 +10,17 @@ interface ConversationItemProps {
   isPinned?: boolean;
 }
 
-const COLORS = {
-  primary: "#5B4BDB",
-  primarySoft: "#EFEBFE",
-  text: "#1B1B2F",
-  sub: "#9CA3AF",
-};
+const PRIMARY = "#3B2FC9";
+const AVATAR_ICON = "#3730A3"; // indigo-800
+const SUB = "#6B7280"; // gray-500
 
-type GradientColors = readonly [string, string, ...string[]];
-
-// Gradient ánh tím cho từng trạng thái
-const GRADIENTS: Record<"normal" | "unread" | "pressed", GradientColors> = {
-  normal: ["#FFFFFF", "#F6F3FF", "#EDE7FF"],
-  unread: ["#FFFFFF", "#EFE9FF", "#DFD4FF"],
-  pressed: ["#F8F6FF", "#EAE3FF", "#DCD1FF"],
+const AVATAR_SIZE = 48;
+const avatarStyle = {
+  width: AVATAR_SIZE,
+  height: AVATAR_SIZE,
+  borderRadius: AVATAR_SIZE / 2,
+  overflow: "hidden" as const,
+  flexShrink: 0,
 };
 
 const WEEKDAYS = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
@@ -121,315 +117,108 @@ export default function ConversationItem({
     });
   };
 
-  const radius = isGroup ? 28 : 22;
+  const bgClass = hasUnread ? "bg-[#EBE8FE]" : "bg-[#F4F2FF]";
 
   return (
-    // Pressable: chỉ giữ bóng tím + bo góc (không overflow hidden để bóng hiện)
     <Pressable
       onPress={openConversation}
-      style={[
-        styles.shadow,
-        { borderRadius: radius },
-        hasUnread && styles.shadowUnread,
-      ]}
+      className={`mx-4 my-1.5 h-[104px] justify-center rounded-[18px] border-[1.5px] border-[#D6D1FA] px-[14px] py-3 shadow-md active:bg-[#E2DDFD] ${bgClass}`}
     >
-      {({ pressed }) => (
-        // LinearGradient: nền gradient + viền tím mảnh
-        <LinearGradient
-          colors={
-            pressed
-              ? GRADIENTS.pressed
-              : hasUnread
-                ? GRADIENTS.unread
-                : GRADIENTS.normal
-          }
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[
-            styles.gradient,
-            styles.card,
-            { borderRadius: radius },
-            hasUnread && styles.gradientUnread,
-          ]}
-        >
-          {/* Bố cục hàng ngang: avatar | nội dung */}
-          <View style={styles.row}>
-            {/* Avatar */}
-            {isGroup ? (
-              <View style={styles.groupAvatar}>
+      {/*  avatar | nội dung */}
+      <View className="flex-row items-center">
+        {/* Avatar */}
+        {isGroup ? (
+          <View
+            style={avatarStyle}
+            className="items-center justify-center bg-indigo-100"
+          >
+            <Ionicons
+              name="people"
+              size={26}
+              color={AVATAR_ICON}
+            />
+          </View>
+        ) : avatarUrl ? (
+          <Image
+            source={{ uri: avatarUrl }}
+            style={avatarStyle}
+          />
+        ) : (
+          <View
+            style={avatarStyle}
+            className="items-center justify-center bg-indigo-100"
+          >
+            <Text className="text-lg font-bold text-indigo-800">
+              {displayName.charAt(0).toUpperCase()}
+            </Text>
+          </View>
+        )}
+
+        {/* Nội dung */}
+        <View className="ml-3 min-w-0 flex-1 justify-center">
+          {/* Hàng 1: tên (+ ghim) + thời gian */}
+          <View className="flex-row items-center justify-between">
+            <View className="mr-2 flex-1 flex-row items-center">
+              <Text
+                className={`shrink font-bold text-gray-900 ${
+                  isGroup ? "text-[17px]" : "text-[15px]"
+                }`}
+                numberOfLines={1}
+              >
+                {displayName}
+              </Text>
+
+              {isGroup && isPinned && (
                 <Ionicons
-                  name="people"
-                  size={30}
-                  color={COLORS.primary}
+                  name="pin"
+                  size={14}
+                  color={PRIMARY}
+                  style={{ marginLeft: 8 }}
                 />
-              </View>
-            ) : avatarUrl ? (
-              <Image
-                source={{ uri: avatarUrl }}
-                style={styles.directAvatar}
-              />
-            ) : (
-              <View style={[styles.directAvatar, styles.directAvatarFallback]}>
-                <Text style={styles.avatarText}>
-                  {displayName.charAt(0).toUpperCase()}
+              )}
+            </View>
+
+            <Text className={`text-gray-500 ${isGroup ? "text-sm" : "text-xs"}`}>
+              {time}
+            </Text>
+          </View>
+
+          {/* tin nhắn cuối + badge */}
+          <View className="mt-2 flex-row items-center justify-between">
+            <Text
+              numberOfLines={1}
+              className={`mr-2 flex-1 ${isGroup ? "text-sm" : "text-[13px]"} ${
+                hasUnread ? "font-bold text-gray-900" : "text-gray-500"
+              }`}
+            >
+              {messagePrefix}
+              {messagePreview}
+            </Text>
+
+            {hasUnread && (
+              <View className="h-6 min-w-[24px] items-center justify-center rounded-xl bg-[#3B2FC9] px-1.5">
+                <Text className="text-xs font-bold text-white">
+                  {unreadCount > 99 ? "99+" : unreadCount}
                 </Text>
               </View>
             )}
-
-            {/* Nội dung */}
-            <View style={styles.content}>
-              {/* Hàng 1: tên (+ ghim) + thời gian */}
-              <View style={styles.headerRow}>
-                <View style={styles.nameWrap}>
-                  <Text
-                    style={[
-                      styles.name,
-                      isGroup ? styles.nameGroup : styles.nameDirect,
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {displayName}
-                  </Text>
-
-                  {isGroup && isPinned && (
-                    <Ionicons
-                      name="pin"
-                      size={14}
-                      color={COLORS.primary}
-                      style={styles.pin}
-                    />
-                  )}
-                </View>
-
-                <Text style={[styles.time, isGroup && styles.timeGroup]}>
-                  {time}
-                </Text>
-              </View>
-
-              {/* Hàng 2: tin nhắn cuối + badge */}
-              <View style={styles.messageRow}>
-                <Text
-                  numberOfLines={1}
-                  style={[
-                    styles.message,
-                    isGroup ? styles.messageGroup : styles.messageDirect,
-                    hasUnread && styles.messageUnread,
-                  ]}
-                >
-                  {messagePrefix}
-                  {messagePreview}
-                </Text>
-
-                {hasUnread && (
-                  <LinearGradient
-                    colors={["#8B7BFF", "#5B4BDB"]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.badge}
-                  >
-                    <Text style={styles.badgeText}>
-                      {unreadCount > 99 ? "99+" : unreadCount}
-                    </Text>
-                  </LinearGradient>
-                )}
-              </View>
-
-              {/* Hàng 3 (chỉ nhóm): số thành viên */}
-              {isGroup && (
-                <View style={styles.memberRow}>
-                  {isGroup ? (
-                    <>
-                      <Ionicons
-                        name="people-outline"
-                        size={14}
-                        color={COLORS.sub}
-                      />
-                      <Text style={styles.memberCount}>
-                        {conversation.participants.length} thành viên
-                      </Text>
-                    </>
-                  ) : null}
-                </View>
-              )}
-            </View>
           </View>
-        </LinearGradient>
-      )}
+
+          {/*  số thành viên */}
+          {isGroup && (
+            <View className="mt-1 h-[18px] flex-row items-center gap-1.5">
+              <Ionicons
+                name="people-outline"
+                size={14}
+                color={SUB}
+              />
+              <Text className="text-xs text-gray-500">
+                {conversation.participants.length} thành viên
+              </Text>
+            </View>
+          )}
+        </View>
+      </View>
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  /* ---------- Bóng ánh tím (Pressable) ---------- */
-  shadow: {
-    marginHorizontal: 16,
-    marginVertical: 6,
-    backgroundColor: "#FFFFFF", // nền đệm để iOS vẽ bóng đúng
-    shadowColor: "#7C5CFC",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 14,
-    elevation: 3,
-  },
-
-  shadowUnread: {
-    shadowOpacity: 0.22,
-    shadowRadius: 18,
-    elevation: 6,
-  },
-
-  /* ---------- Nền gradient ---------- */
-  gradient: {
-    borderWidth: 1,
-    borderColor: "rgba(124, 92, 252, 0.14)",
-    overflow: "hidden",
-  },
-
-  gradientUnread: {
-    borderColor: "rgba(124, 92, 252, 0.32)",
-  },
-
-  card: {
-    height: 104,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    justifyContent: "center",
-  },
-
-  /* ---------- Bố cục hàng ngang ---------- */
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
-  /* ---------- Avatar ---------- */
-  groupAvatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.75)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  directAvatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-  },
-
-  directAvatarFallback: {
-    backgroundColor: "rgba(255,255,255,0.75)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  avatarText: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: COLORS.primary,
-  },
-
-  /* ---------- Nội dung ---------- */
-  content: {
-    flex: 1,
-    marginLeft: 14,
-    justifyContent: "center",
-  },
-
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-
-  nameWrap: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    marginRight: 8,
-  },
-
-  name: {
-    fontWeight: "700",
-    color: COLORS.text,
-    flexShrink: 1,
-  },
-
-  nameGroup: {
-    fontSize: 17,
-  },
-
-  nameDirect: {
-    fontSize: 15,
-  },
-
-  pin: {
-    marginLeft: 8,
-  },
-
-  time: {
-    fontSize: 12,
-    color: COLORS.sub,
-  },
-
-  timeGroup: {
-    fontSize: 14,
-  },
-
-  messageRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 8,
-  },
-
-  message: {
-    flex: 1,
-    fontSize: 13,
-    color: "#8B8FA3",
-    marginRight: 8,
-  },
-
-  messageGroup: {
-    fontSize: 14,
-  },
-
-  messageDirect: {
-    fontSize: 13,
-  },
-
-  messageUnread: {
-    color: COLORS.text,
-    fontWeight: "700",
-  },
-
-  memberRow: {
-    height: 18,
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 4,
-    gap: 6,
-  },
-
-  memberCount: {
-    fontSize: 12,
-    color: COLORS.sub,
-  },
-
-  /* ---------- Badge (gradient tím) ---------- */
-  badge: {
-    minWidth: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 6,
-  },
-
-  badgeText: {
-    color: "#FFFFFF",
-    fontSize: 12,
-    fontWeight: "700",
-  },
-});

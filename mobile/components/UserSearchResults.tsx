@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { View, Text, FlatList, StyleSheet } from "react-native";
+import { View, Text, FlatList } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { useSearchUsers, type SearchUser } from "@/hooks/useUserSearch";
@@ -13,46 +13,58 @@ type Props = {
 
 export default function UserSearchResults({ query, onMessage }: Props) {
   const { users, total, isSearching, hasQuery, isError } = useSearchUsers(query);
+
   const { data: requests } = useFriendRequests();
 
   const receivedTime = useMemo(() => {
     const map = new Map<string, string>();
+
     (requests?.received ?? []).forEach((r: any) =>
       map.set(String(r._id), r.createdAt),
     );
+
     return map;
   }, [requests]);
 
   const byUsername = query.trim().startsWith("@");
 
-  // Chưa gõ gì -> gợi ý nhẹ
+  // Chưa nhập nội dung tìm kiếm
   if (!hasQuery) {
     return (
-      <View style={styles.hint}>
+      <View className="items-center gap-[10px] pt-[60px]">
         <MaterialCommunityIcons
           name="account-search-outline"
           size={40}
           color="#A5B4FC"
         />
-        <Text style={styles.hintText}>Nhập @username hoặc tên để tìm bạn bè</Text>
+
+        <Text className="text-[13px] text-gray-400">
+          Nhập @username hoặc tên để tìm bạn bè
+        </Text>
       </View>
     );
   }
 
+  // Không tìm thấy kết quả
   const Empty = !isSearching ? (
-    <View style={styles.empty}>
-      <View style={styles.emptyIconWrap}>
+    <View className="items-center rounded-2xl bg-[#F8F8FC] px-3 py-6">
+      <View className="relative mb-[14px] h-[76px] w-[76px] items-center justify-center rounded-full bg-[#E0E0FB]">
         <MaterialCommunityIcons
           name="account-search-outline"
           size={34}
           color="#4F46E5"
         />
-        <View style={styles.qBadge}>
-          <Text style={styles.qText}>?</Text>
+
+        <View className="absolute -right-0.5 -top-0.5 h-[22px] w-[22px] items-center justify-center rounded-full bg-[#3B2FC9]">
+          <Text className="text-xs font-bold text-white">?</Text>
         </View>
       </View>
-      <Text style={styles.emptyTitle}>Không tìm thấy người dùng phù hợp</Text>
-      <Text style={styles.emptyDesc}>
+
+      <Text className="text-center text-base font-bold text-gray-800">
+        Không tìm thấy người dùng phù hợp
+      </Text>
+
+      <Text className="mt-2 text-center text-[12.5px] leading-[18px] text-gray-600">
         Hãy kiểm tra lại chính tả username bắt đầu bằng @ hoặc tên đầy đủ của người
         dùng.
       </Text>
@@ -66,23 +78,29 @@ export default function UserSearchResults({ query, onMessage }: Props) {
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
       showsVerticalScrollIndicator={false}
-      // Khoảng cách giữa các card
-      ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+      ItemSeparatorComponent={() => <View className="h-3" />}
       ListHeaderComponent={
         <>
-          <View style={styles.filterRow}>
-            <Text style={styles.filterLabel}>Đang lọc theo:</Text>
-            <View style={styles.chip}>
-              <Text style={styles.chipText}>
+          {/* Filter information */}
+          <View className="mt-1 flex-row items-center gap-[6px]">
+            <Text className="text-[11px] text-gray-500">Đang lọc theo:</Text>
+
+            <View className="flex-row items-center gap-1 rounded-lg bg-[#E0E0FB] px-2 py-[3px]">
+              <Text className="text-[11px] font-semibold text-indigo-800">
                 {byUsername ? "Khớp username" : "Tên hoặc username"}
               </Text>
-              <View style={styles.chipDot} />
+
+              <View className="h-[5px] w-[5px] rounded-full bg-indigo-800" />
             </View>
-            <Text style={styles.count}>{total} kết quả tìm thấy</Text>
+
+            <Text className="ml-auto text-[11px] text-gray-500">
+              {total} kết quả tìm thấy
+            </Text>
           </View>
 
-          <View style={styles.resultHeader}>
-            <Text style={styles.resultTitle}>Kết quả tìm kiếm</Text>
+          {/* Result heading */}
+          <View className="mb-[10px] mt-[14px] flex-row items-center justify-between">
+            <Text className="text-sm font-bold text-gray-900">Kết quả tìm kiếm</Text>
           </View>
         </>
       }
@@ -97,7 +115,9 @@ export default function UserSearchResults({ query, onMessage }: Props) {
       )}
       ListEmptyComponent={
         isError ? (
-          <Text style={styles.errorText}>Không thể tìm kiếm, vui lòng thử lại.</Text>
+          <Text className="py-5 text-center text-[13px] text-red-600">
+            Không thể tìm kiếm, vui lòng thử lại.
+          </Text>
         ) : (
           Empty
         )
@@ -110,85 +130,3 @@ export default function UserSearchResults({ query, onMessage }: Props) {
     />
   );
 }
-
-const styles = StyleSheet.create({
-  hint: { alignItems: "center", paddingTop: 60, gap: 10 },
-  hintText: { fontSize: 13, color: "#9CA3AF" },
-
-  filterRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginTop: 4,
-  },
-  filterLabel: { fontSize: 11, color: "#6B7280" },
-  chip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: "#E0E0FB",
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  chipText: { fontSize: 11, fontWeight: "600", color: "#3730A3" },
-  chipDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: "#3730A3" },
-  count: { marginLeft: "auto", fontSize: 11, color: "#6B7280" },
-  resultHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 14,
-    marginBottom: 10,
-  },
-  resultTitle: { fontSize: 14, fontWeight: "700", color: "#111827" },
-
-  empty: {
-    alignItems: "center",
-    paddingVertical: 24,
-    paddingHorizontal: 12,
-    backgroundColor: "#F8F8FC",
-    borderRadius: 16,
-  },
-  emptyIconWrap: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
-    backgroundColor: "#E0E0FB",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 14,
-  },
-  qBadge: {
-    position: "absolute",
-    top: -2,
-    right: -2,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: "#3B2FC9",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  qText: { color: "#fff", fontSize: 12, fontWeight: "700" },
-  emptyTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#1F2937",
-    textAlign: "center",
-  },
-  emptyDesc: {
-    fontSize: 12.5,
-    color: "#4B5563",
-    textAlign: "center",
-    marginTop: 8,
-    lineHeight: 18,
-  },
-
-  errorText: {
-    textAlign: "center",
-    color: "#DC2626",
-    fontSize: 13,
-    paddingVertical: 20,
-  },
-});
