@@ -24,7 +24,7 @@ import {
   useMarkAsSeen,
 } from "@/hooks/useChat";
 import { useMe } from "@/hooks/useMe";
-import type { Message } from "@/types/chat";
+import type { Message, ConversationType } from "@/types/chat";
 
 const COLORS = {
   primary: "#3B2FD0",
@@ -37,24 +37,10 @@ const COLORS = {
   online: "#22C55E",
 };
 
-export type ChatType = "direct" | "group";
-
-// type Message = {
-//   id: string;
-//   from: "me" | "other";
-//   senderName?: string;
-//   senderAvatar?: string;
-//   text?: string;
-//   time: string;
-//   seen?: boolean;
-//   reaction?: string;
-//   file?: { name: string; preview: string };
-// };
-
 type Props = {
   conversationId?: string;
   recipientId?: string;
-  fallbackType?: ChatType;
+  fallbackType?: ConversationType;
   fallbackName?: string;
   fallbackAvatar?: string;
   onBack: () => void;
@@ -105,13 +91,20 @@ export default function ChatRoom({
     [convData, conversationId],
   );
 
+  const effectiveRecipientId =
+    recipientId ?? conversation?.participants.find((p) => p._id !== me?._id)?._id;
+
   const isGroup = (conversation?.type ?? fallbackType) === "group";
 
-  // Thông tin header
-  const other = conversation?.participants.find((p) => p._id !== me?._id);
-  const title = isGroup
-    ? (conversation?.group?.name ?? fallbackName ?? "Nhóm")
-    : (other?.displayName ?? fallbackName ?? "Người dùng");
+  // Thông tin header: ưu tiên dữ liệu conversation đang có, không dùng name cũ từ route params
+  const other = conversation?.participants.find(
+    (p) => String(p._id) !== String(me?._id),
+  );
+  const conversationDisplayName = isGroup
+    ? conversation?.group?.name
+    : other?.displayName;
+  const title =
+    conversationDisplayName ?? fallbackName ?? (isGroup ? "Nhóm" : "Người dùng");
   const headerAvatar = isGroup ? null : (other?.avatarUrl ?? fallbackAvatar ?? null);
   const memberCount = conversation?.participants.length ?? 0;
 
@@ -135,13 +128,15 @@ export default function ChatRoom({
   const sending = sendDirect.isPending || sendGroup.isPending;
 
   // Đánh dấu đã xem khi còn tin chưa đọc
-  const unread = me?._id ? (conversation?.unreadCounts?.[me._id] ?? 0) : 0;
+  const unread = me?._id ? (conversation?.unreadCounts?.[String(me._id)] ?? 0) : 0;
   useEffect(() => {
     if (conversationId && unread > 0) markAsSeen(conversationId);
   }, [conversationId, unread]); // eslint-disable-line
 
   // Người còn lại đã xem tin cuối của mình chưa
-  const seenByOthers = !!conversation?.seenBy?.some((u) => u._id !== me?._id);
+  const seenByOthers = !!conversation?.seenBy?.some(
+    (u) => String(u._id) !== String(me?._id),
+  );
   const lastMessageId = conversation?.lastMessage?._id;
 
   const send = async () => {
@@ -157,7 +152,7 @@ export default function ChatRoom({
       } else {
         const msg = await sendDirect.mutateAsync({
           conversationId,
-          recipientId,
+          recipientId: effectiveRecipientId,
           content: value,
         });
         if (!conversationId && msg?.conversationId) {
@@ -171,7 +166,7 @@ export default function ChatRoom({
 
   const renderItem = useCallback(
     ({ item, index }: { item: Message; index: number }) => {
-      const mine = item.senderId === me?._id;
+      const mine = String(item.senderId) === String(me?._id);
       const sender = participantMap.get(item.senderId);
 
       // list inverted: index + 1 = tin cũ hơn, index - 1 = tin mới hơn
@@ -249,11 +244,12 @@ export default function ChatRoom({
       style={styles.safe}
       edges={["top", "bottom"]}
     >
-      {/* Top bar */}
-      <View style={styles.topBar}>
+      {/* Contact row */}
+      <View style={styles.contactRow}>
         <TouchableOpacity
           onPress={onBack}
           hitSlop={10}
+          style={{ marginRight: 12 }}
         >
           <Ionicons
             name="chevron-back"
@@ -261,27 +257,6 @@ export default function ChatRoom({
             color={COLORS.text}
           />
         </TouchableOpacity>
-        <View style={styles.topTitleWrap}>
-          <View style={styles.topIcon}>
-            <Ionicons
-              name="chatbubble-ellipses"
-              size={16}
-              color="#fff"
-            />
-          </View>
-          <Text style={styles.topTitle}>
-            {isGroup ? "Group Message" : "Direct Message"}
-          </Text>
-        </View>
-        <Ionicons
-          name="ellipsis-vertical"
-          size={18}
-          color={COLORS.text}
-        />
-      </View>
-
-      {/* Contact row */}
-      <View style={styles.contactRow}>
         {isGroup ? (
           <View style={[styles.contactAvatar, styles.groupAvatar]}>
             <Ionicons
@@ -442,31 +417,6 @@ export default function ChatRoom({
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.bg },
 
-  /* Top bar */
-  topBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 12,
-    height: 52,
-    backgroundColor: COLORS.card,
-  },
-  topTitleWrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-    marginLeft: 8,
-  },
-  topIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: "#7C6CF0",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 8,
-  },
-  topTitle: { fontSize: 16, fontWeight: "700", color: COLORS.text },
   avatarPlaceholder: {
     backgroundColor: COLORS.primarySoft,
     alignItems: "center",

@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { authApi, saveAuthToken } from "@/utils/api";
+import { useQueryClient } from "@tanstack/react-query";
 
 const initialForm = {
   displayName: "",
@@ -25,6 +26,7 @@ export default function AuthScreen() {
   const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const queryClient = useQueryClient();
 
   const updateField = (field: keyof typeof initialForm, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -67,8 +69,8 @@ export default function AuthScreen() {
           password: form.password,
         });
 
-        const token = loginRes.data.accessToken;
-        await saveAuthToken(token);
+        queryClient.clear(); //
+        await saveAuthToken(loginRes.data.accessToken);
 
         Alert.alert("Success", "Account created and signed in successfully.");
         router.replace("/(tabs)");
@@ -80,6 +82,7 @@ export default function AuthScreen() {
         password: form.password,
       });
 
+      queryClient.clear();
       await saveAuthToken(res.data.accessToken);
       router.replace("/(tabs)");
     } catch (error: any) {
@@ -196,7 +199,7 @@ export default function AuthScreen() {
                 value={form.username}
                 onChangeText={(text) => updateField("username", text)}
                 className="rounded-2xl border border-gray-200 bg-[#fafafa] px-4 py-3 text-sm text-gray-800"
-                placeholder="johndoe"
+                placeholder="username"
                 placeholderTextColor="#9ca3af"
                 autoCapitalize="none"
               />
@@ -210,7 +213,7 @@ export default function AuthScreen() {
                 value={form.username}
                 onChangeText={(text) => updateField("username", text)}
                 className="rounded-2xl border border-gray-200 bg-[#fafafa] px-4 py-3 text-sm text-gray-800"
-                placeholder="johndoe"
+                placeholder="username"
                 placeholderTextColor="#9ca3af"
                 autoCapitalize="none"
               />

@@ -8,6 +8,11 @@ export const checkFriendship = async (req, res, next) => {
     const me = req.user._id.toString();
     const recipientId = req.body?.recipientId ?? null;
     const memberIds = req.body?.memberIds ?? [];
+    const conversationId = req.body?.conversationId ?? null;
+
+    if (conversationId) {
+      return next();
+    }
 
     if (!recipientId && memberIds.length === 0) {
       return res

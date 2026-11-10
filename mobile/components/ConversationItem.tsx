@@ -66,11 +66,12 @@ export default function ConversationItem({
   const router = useRouter();
 
   const isGroup = conversation.type === "group";
+  const normalizedCurrentUserId = String(currentUserId ?? "");
 
   const otherUser = isGroup
     ? undefined
     : conversation.participants.find(
-        (participant) => participant._id !== currentUserId,
+        (participant) => String(participant._id) !== normalizedCurrentUserId,
       );
 
   const displayName = isGroup
@@ -81,18 +82,15 @@ export default function ConversationItem({
 
   const lastMessage = conversation.lastMessage;
 
-  const senderId =
-    typeof lastMessage?.senderId === "string"
-      ? lastMessage.senderId
-      : lastMessage?.senderId?._id;
+  const senderId = lastMessage?.senderId?._id;
 
   const sender = conversation.participants.find(
     (participant) => participant._id === senderId,
   );
 
-  const isSentByMe = senderId === currentUserId;
+  const isSentByMe = String(senderId) === normalizedCurrentUserId;
 
-  const unreadCount = conversation.unreadCounts?.[currentUserId] ?? 0;
+  const unreadCount = conversation.unreadCounts?.[normalizedCurrentUserId] ?? 0;
   const hasUnread = unreadCount > 0;
 
   const messagePreview = lastMessage
@@ -118,6 +116,7 @@ export default function ConversationItem({
         type: conversation.type,
         name: displayName,
         avatar: avatarUrl ?? "",
+        recipientId: isGroup ? undefined : otherUser?._id,
       },
     });
   };
@@ -148,7 +147,7 @@ export default function ConversationItem({
           end={{ x: 1, y: 1 }}
           style={[
             styles.gradient,
-            isGroup ? styles.paddingGroup : styles.paddingDirect,
+            styles.card,
             { borderRadius: radius },
             hasUnread && styles.gradientUnread,
           ]}
@@ -236,18 +235,22 @@ export default function ConversationItem({
               </View>
 
               {/* Hàng 3 (chỉ nhóm): số thành viên */}
-              {/* {isGroup && (
+              {isGroup && (
                 <View style={styles.memberRow}>
-                  <Ionicons
-                    name="people-outline"
-                    size={15}
-                    color={COLORS.sub}
-                  />
-                  <Text style={styles.memberCount}>
-                    {conversation.participants.length} thành viên
-                  </Text>
+                  {isGroup ? (
+                    <>
+                      <Ionicons
+                        name="people-outline"
+                        size={14}
+                        color={COLORS.sub}
+                      />
+                      <Text style={styles.memberCount}>
+                        {conversation.participants.length} thành viên
+                      </Text>
+                    </>
+                  ) : null}
                 </View>
-              )} */}
+              )}
             </View>
           </View>
         </LinearGradient>
@@ -286,14 +289,11 @@ const styles = StyleSheet.create({
     borderColor: "rgba(124, 92, 252, 0.32)",
   },
 
-  paddingGroup: {
-    paddingHorizontal: 18,
-    paddingVertical: 18,
-  },
-
-  paddingDirect: {
+  card: {
+    height: 104,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 12,
+    justifyContent: "center",
   },
 
   /* ---------- Bố cục hàng ngang ---------- */
@@ -304,9 +304,9 @@ const styles = StyleSheet.create({
 
   /* ---------- Avatar ---------- */
   groupAvatar: {
-    width: 68,
-    height: 68,
-    borderRadius: 22,
+    width: 52,
+    height: 52,
+    borderRadius: 18,
     backgroundColor: "rgba(255,255,255,0.75)",
     justifyContent: "center",
     alignItems: "center",
@@ -386,6 +386,7 @@ const styles = StyleSheet.create({
 
   message: {
     flex: 1,
+    fontSize: 13,
     color: "#8B8FA3",
     marginRight: 8,
   },
@@ -404,9 +405,10 @@ const styles = StyleSheet.create({
   },
 
   memberRow: {
+    height: 18,
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 8,
+    marginTop: 4,
     gap: 6,
   },
 

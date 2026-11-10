@@ -9,8 +9,14 @@ import type {
   SendGroupMessagePayload,
 } from "@/types/chat";
 
-export const API_BASE_URL =
+const RAW_API_BASE_URL =
   process.env.EXPO_PUBLIC_API_URL || "http://192.168.1.5:5001";
+
+export const API_BASE_URL = RAW_API_BASE_URL.endsWith("/api")
+  ? RAW_API_BASE_URL
+  : `${RAW_API_BASE_URL.replace(/\/$/, "")}/api`;
+
+export const SOCKET_BASE_URL = RAW_API_BASE_URL.replace(/\/$/, "");
 const AUTH_TOKEN_KEY = "authToken";
 // ! 🔥 localhost api would not work on your actual physical device
 
@@ -44,10 +50,6 @@ export const createApiClient = (
 export const useApiClient = (): AxiosInstance => {
   return useMemo(() => createApiClient(getAuthToken), []);
 };
-
-// export const useApiClient = (): AxiosInstance => {
-//   return createApiClient(getAuthToken);
-// };
 
 export const authApi = {
   signUp: (payload: {
@@ -123,10 +125,24 @@ export const chatService = {
 };
 export const userApi = {
   searchUsers: (api: AxiosInstance, query: string) =>
-    api.get(`/users/search?query=${query}`),
+    api.get("/users/search", { params: { q: query } }),
   syncUser: (api: AxiosInstance) => api.post("/users/sync"),
   getCurrentUser: (api: AxiosInstance) => api.get("/users/me"),
   updateProfile: (api: AxiosInstance, data: any) => api.put("/users/profile", data),
+};
+export const friendApi = {
+  getRequestedFriends: (api: AxiosInstance) => api.get("/friends/requests"),
+
+  sendFriendRequest: (api: AxiosInstance, data: { to: String; messgae?: String }) =>
+    api.post("/friends/request", data),
+
+  acceptFriendRequest: (api: AxiosInstance, requestId: string) =>
+    api.post(`/friends/request/${requestId}/accept`),
+
+  declineFriendRequest: (api: AxiosInstance, requestId: string) =>
+    api.delete(`/friends/request/${requestId}/decline`),
+
+  getFriendsList: (api: AxiosInstance) => api.get("/friends"),
 };
 
 export const postApi = {

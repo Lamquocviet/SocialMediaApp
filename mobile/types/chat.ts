@@ -25,13 +25,11 @@ export interface LastMessage {
   createdAt: string | null;
 
   // Backend populate lastMessage.senderId
-  senderId:
-    | {
-        _id: string;
-        displayName: string;
-        avatarUrl?: string | null;
-      }
-    | string;
+  senderId: {
+    _id: string;
+    displayName: string;
+    avatarUrl?: string | null;
+  };
 }
 
 export interface Conversation {

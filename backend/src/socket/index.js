@@ -54,10 +54,10 @@ export const initSocket = (httpServer) => {
 
       console.log(`Socket disconnected: ${socket.id}`);
     });
-    // Join sẵn mọi conversation của user
 
+    // Join sẵn mọi conversation của user
     try {
-      const conversationIds = await getUserConversationsForSocket(userId);
+      const conversationIds = await getUserConversationsForSocketIO(userId);
       conversationIds.forEach((id) => socket.join(id.toString()));
     } catch (err) {
       console.error("Lỗi join conversations:", err);
@@ -69,7 +69,7 @@ export const initSocket = (httpServer) => {
     // Tham gia room conversation
     socket.on("join-conversation", async (conversationId) => {
       if (typeof conversationId !== "string" || !conversationId.trim()) return;
-      const ids = await getUserConversationsForSocket(userId);
+      const ids = await getUserConversationsForSocketIO(userId);
       if (ids.map(String).includes(conversationId)) socket.join(conversationId);
     });
   });

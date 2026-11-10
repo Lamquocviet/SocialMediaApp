@@ -1,12 +1,12 @@
 import React from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import ChatRoom, { ChatType } from "@/components/chatComponent/ChatRoom";
-
+import ChatRoom from "@/components/chatComponent/ChatRoom";
+import type { ConversationType } from "@/types/chat";
 export default function ChatDetailScreen() {
   const router = useRouter();
   const { id, type, name, avatar, recipientId } = useLocalSearchParams<{
     id: string;
-    type?: ChatType;
+    type?: ConversationType;
     name?: string;
     avatar?: string;
     recipientId?: string;

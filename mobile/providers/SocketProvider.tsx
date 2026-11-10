@@ -4,7 +4,7 @@ import { AppState } from "react-native";
 import { io, Socket } from "socket.io-client";
 import { InfiniteData, useQueryClient } from "@tanstack/react-query";
 
-import { API_BASE_URL, getAuthToken } from "@/utils/api";
+import { SOCKET_BASE_URL, getAuthToken } from "@/utils/api";
 import { chatKeys } from "@/hooks/useChat";
 import { useMe } from "@/hooks/useMe";
 import type { Message, MessagesResponse } from "@/types/chat";
@@ -23,7 +23,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!me?._id) return;
 
-    const s = io(API_BASE_URL, {
+    const s = io(SOCKET_BASE_URL, {
       transports: ["websocket"], // bỏ polling cho nhẹ và ổn định trên RN
       // token lấy bất đồng bộ từ SecureStore, gọi lại mỗi lần reconnect
       auth: (cb) => {
@@ -46,12 +46,21 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       queryClient.setQueryData<InfiniteData<MessagesResponse>>(
         chatKeys.messages(convId),
         (old) => {
-          if (!old) return old; // chưa mở phòng này -> lần mở sau sẽ fetch
+          if (!old || !old.pages.length) {
+            return old;
+          }
+
           const exists = old.pages.some((p) =>
             p.messages.some((m) => m._id === message._id),
           );
           if (exists) return old; // người gửi cũng nhận lại tin của mình
+
           const [first, ...rest] = old.pages;
+
+          if (!first) {
+            return old;
+          }
+
           return {
             ...old,
             pages: [{ ...first, messages: [...first.messages, message] }, ...rest],
