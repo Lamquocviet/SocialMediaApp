@@ -270,17 +270,24 @@ export default function UserSearchResultCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 12,
+    backgroundColor: "#F4F2FF", // nền tím nhạt
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: "#D6D1FA", // khung tím
+    padding: 14,
     marginBottom: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+
+    shadowColor: "#5144E4", // bóng đổ ánh tím
+    shadowOpacity: 0.14,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
-  cardPressed: { backgroundColor: "#F5F5FF", transform: [{ scale: 0.99 }] },
+  cardPressed: {
+    backgroundColor: "#EBE8FE",
+    borderColor: "#B9B2F5",
+    transform: [{ scale: 0.99 }],
+  },
   row: { flexDirection: "row", alignItems: "center", gap: 10 },
   avatarWrap: { width: 48, height: 48 },
   avatar: { width: 48, height: 48, borderRadius: 24 },
@@ -298,7 +305,7 @@ const styles = StyleSheet.create({
     height: 13,
     borderRadius: 7,
     borderWidth: 2,
-    borderColor: "#fff",
+    borderColor: "#F4F2FF", // trùng màu nền card (trước là #fff)
   },
   info: { flex: 1, minWidth: 0 },
   nameRow: { flexDirection: "row", alignItems: "center", gap: 6 },
@@ -307,7 +314,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 3,
-    backgroundColor: "#DDD6FE",
+    backgroundColor: "#E2DDFD",
     borderRadius: 6,
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -348,11 +355,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: "#EEF0FB",
+    backgroundColor: "#fff", // trắng nổi bật trên nền tím
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     marginTop: 12,
+    borderWidth: 1,
+    borderColor: "#E4E0FB",
   },
   bannerText: { flex: 1, fontSize: 12, color: "#3730A3" },
   actionRow: { flexDirection: "row", gap: 10, marginTop: 12 },

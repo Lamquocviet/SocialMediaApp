@@ -252,7 +252,6 @@ export default function ChatListScreen() {
       {isSearching ? (
         <UserSearchResults
           query={search}
-          onSuggest={setSearch}
           onMessage={openChatWith}
         />
       ) : (

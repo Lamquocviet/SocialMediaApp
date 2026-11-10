@@ -160,18 +160,48 @@ export const getAllFriends = async (req, res) => {
   }
 };
 
+// export const getFriendRequests = async (req, res) => {
+//   try {
+//     const userId = req.user._id;
+
+//     const populateFields = "_id username displayName avatarUrl";
+
+//     const [sent, received] = await Promise.all([
+//       FriendRequest.find({ from: userId }).populate("to", populateFields),
+//       FriendRequest.find({ to: userId }).populate("from", populateFields),
+//     ]);
+
+//     res.status(200).json({ sent, received });
+//   } catch (error) {
+//     console.error("Lỗi khi lấy danh sách yêu cầu kết bạn", error);
+//     return res.status(500).json({ message: "Lỗi hệ thống" });
+//   }
+// };
 export const getFriendRequests = async (req, res) => {
   try {
     const userId = req.user._id;
 
     const populateFields = "_id username displayName avatarUrl";
 
-    const [sent, received] = await Promise.all([
-      FriendRequest.find({ from: userId }).populate("to", populateFields),
-      FriendRequest.find({ to: userId }).populate("from", populateFields),
+    const [sent, received, sentCount, receivedCount] = await Promise.all([
+      FriendRequest.find({ from: userId }).populate("to", populateFields).lean(),
+
+      FriendRequest.find({ to: userId }).populate("from", populateFields).lean(),
+
+      FriendRequest.countDocuments({ from: userId }),
+
+      FriendRequest.countDocuments({ to: userId }),
     ]);
 
-    res.status(200).json({ sent, received });
+    return res.status(200).json({
+      sent,
+      received,
+      counts: {
+        sent: sentCount,
+        received: receivedCount,
+        total: sentCount + receivedCount,
+      },
+    });
   } catch (error) {
     console.error("Lỗi khi lấy danh sách yêu cầu kết bạn", error);
     return res.status(500).json({ message: "Lỗi hệ thống" });

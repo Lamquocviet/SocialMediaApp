@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { View, Text, Pressable, FlatList, StyleSheet } from "react-native";
+import { View, Text, FlatList, StyleSheet } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { useSearchUsers, type SearchUser } from "@/hooks/useUserSearch";
@@ -9,10 +9,9 @@ import UserSearchResultCard from "./UserSearchResultCard";
 type Props = {
   query: string;
   onMessage?: (user: SearchUser) => void;
-  onSuggest?: (text: string) => void; // bấm "Thử với @design_team"
 };
 
-export default function UserSearchResults({ query, onMessage, onSuggest }: Props) {
+export default function UserSearchResults({ query, onMessage }: Props) {
   const { users, total, isSearching, hasQuery, isError } = useSearchUsers(query);
   const { data: requests } = useFriendRequests();
 
@@ -54,22 +53,9 @@ export default function UserSearchResults({ query, onMessage, onSuggest }: Props
       </View>
       <Text style={styles.emptyTitle}>Không tìm thấy người dùng phù hợp</Text>
       <Text style={styles.emptyDesc}>
-        Hãy kiểm tra lại chính tả username bắt đầu bằng @ hoặc địa chỉ email cá nhân.
+        Hãy kiểm tra lại chính tả username bắt đầu bằng @ hoặc tên đầy đủ của người
+        dùng.
       </Text>
-      <View style={styles.emptyFooter}>
-        <Pressable onPress={() => onSuggest?.("@design_team")}>
-          <Text style={styles.emptyFooterText}>
-            Thử với: <Text style={styles.emptyFooterBold}>@design_team</Text>
-          </Text>
-        </Pressable>
-        <Pressable
-          onPress={() => {
-            /* TODO: quét QR */
-          }}
-        >
-          <Text style={styles.emptyFooterBold}>Quét mã QR cá nhân</Text>
-        </Pressable>
-      </View>
     </View>
   ) : null;
 
@@ -80,6 +66,8 @@ export default function UserSearchResults({ query, onMessage, onSuggest }: Props
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
       showsVerticalScrollIndicator={false}
+      // Khoảng cách giữa các card
+      ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
       ListHeaderComponent={
         <>
           <View style={styles.filterRow}>
@@ -95,13 +83,6 @@ export default function UserSearchResults({ query, onMessage, onSuggest }: Props
 
           <View style={styles.resultHeader}>
             <Text style={styles.resultTitle}>Kết quả tìm kiếm</Text>
-            <Pressable
-              onPress={() => {
-                /* TODO: bộ lọc nâng cao */
-              }}
-            >
-              <Text style={styles.advanced}>Bộ lọc nâng cao</Text>
-            </Pressable>
           </View>
         </>
       }
@@ -121,7 +102,11 @@ export default function UserSearchResults({ query, onMessage, onSuggest }: Props
           Empty
         )
       }
-      contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
+      contentContainerStyle={{
+        paddingHorizontal: 16,
+        paddingTop: 4,
+        paddingBottom: 24,
+      }}
     />
   );
 }
@@ -157,7 +142,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   resultTitle: { fontSize: 14, fontWeight: "700", color: "#111827" },
-  advanced: { fontSize: 12, fontWeight: "600", color: "#3B2FC9" },
 
   empty: {
     alignItems: "center",
@@ -200,15 +184,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     lineHeight: 18,
   },
-  emptyFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignSelf: "stretch",
-    marginTop: 18,
-    paddingHorizontal: 6,
-  },
-  emptyFooterText: { fontSize: 11, color: "#4B5563" },
-  emptyFooterBold: { fontSize: 11, fontWeight: "600", color: "#1F2937" },
+
   errorText: {
     textAlign: "center",
     color: "#DC2626",

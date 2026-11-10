@@ -51,7 +51,7 @@ const TabsLayout = () => {
         }}
       />
       <Tabs.Screen
-        name="search"
+        name="friends"
         options={{
           title: "",
 

@@ -137,10 +137,10 @@ export const friendApi = {
     api.post("/friends/request", data),
 
   acceptFriendRequest: (api: AxiosInstance, requestId: string) =>
-    api.post(`/friends/request/${requestId}/accept`),
+    api.post(`/friends/requests/${requestId}/accept`),
 
   declineFriendRequest: (api: AxiosInstance, requestId: string) =>
-    api.delete(`/friends/request/${requestId}/decline`),
+    api.delete(`/friends/requests/${requestId}/decline`),
 
   getFriendsList: (api: AxiosInstance) => api.get("/friends"),
 };

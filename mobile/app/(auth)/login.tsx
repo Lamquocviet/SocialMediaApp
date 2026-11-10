@@ -135,7 +135,7 @@ export default function AuthScreen() {
                   mode === "signin" ? "text-black" : "text-gray-500"
                 }`}
               >
-                Sign In
+                Đăng nhập
               </Text>
             </Pressable>
 
@@ -150,19 +150,19 @@ export default function AuthScreen() {
                   mode === "signup" ? "text-black" : "text-gray-500"
                 }`}
               >
-                Sign Up
+                Đăng ký
               </Text>
             </Pressable>
           </View>
 
           <View className="mb-5">
             <Text className="text-3xl font-bold text-[#111827]">
-              {mode === "signin" ? "Welcome back" : "Create account"}
+              {mode === "signin" ? "Chào mừng bạn trở lại" : "Tạo tài khoản"}
             </Text>
             <Text className="text-sm text-gray-500 mt-2">
               {mode === "signin"
-                ? "Sign in to continue to your account."
-                : "Start your journey with a new account."}
+                ? "Đăng nhập để tiếp tục sử dụng tài khoản của bạn."
+                : "Bắt đầu hành trình của bạn với một tài khoản mới."}
             </Text>
           </View>
 
@@ -194,13 +194,13 @@ export default function AuthScreen() {
 
           {mode === "signup" && (
             <View className="mb-3">
-              <Text className="text-xs text-gray-500 mb-2">Username</Text>
+              <Text className="text-xs text-gray-500 mb-2">Tên đăng nhập</Text>
               <TextInput
                 value={form.username}
                 onChangeText={(text) => updateField("username", text)}
                 className="rounded-2xl border border-gray-200 bg-[#fafafa] px-4 py-3 text-sm text-gray-800"
                 placeholder="username"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor="username"
                 autoCapitalize="none"
               />
             </View>
@@ -208,11 +208,11 @@ export default function AuthScreen() {
 
           {mode === "signin" && (
             <View className="mb-3">
-              <Text className="text-xs text-gray-500 mb-2">Username</Text>
+              <Text className="text-xs text-gray-500 mb-2">Tên đăng nhập</Text>
               <TextInput
                 value={form.username}
                 onChangeText={(text) => updateField("username", text)}
-                className="rounded-2xl border border-gray-200 bg-[#fafafa] px-4 py-3 text-sm text-gray-800"
+                className="rounded-2xl border border-gray-200 bg-[#fafafa] px-4 py-4 text-sm text-gray-800"
                 placeholder="username"
                 placeholderTextColor="#9ca3af"
                 autoCapitalize="none"
@@ -251,8 +251,8 @@ export default function AuthScreen() {
           )}
 
           <View className="mb-4">
-            <Text className="text-xs text-gray-500 mb-2">Password</Text>
-            <View className="rounded-2xl border border-gray-200 bg-[#fafafa] px-4 py-3 flex-row items-center">
+            <Text className="text-xs text-gray-500 mb-2">Mật khẩu</Text>
+            <View className="rounded-2xl border border-gray-200 bg-[#fafafa] px-4 py-2 flex-row items-center">
               <TextInput
                 value={form.password}
                 onChangeText={(text) => updateField("password", text)}
@@ -272,13 +272,10 @@ export default function AuthScreen() {
 
           {mode === "signin" && (
             <View className="mb-4 flex-row items-center justify-between">
-              <View className="flex-row items-center">
-                <View className="h-4 w-4 rounded border border-gray-300 bg-white" />
-                <Text className="ml-2 text-xs text-gray-500">Remember me</Text>
-              </View>
+              <View className="flex-row items-center"></View>
 
               <Text className="text-xs font-medium text-[#2563eb]">
-                Forgot password?
+                Quên mật khẩu?
               </Text>
             </View>
           )}
@@ -292,16 +289,10 @@ export default function AuthScreen() {
               <ActivityIndicator color="#fff" />
             ) : (
               <Text className="text-white font-semibold text-base">
-                {mode === "signin" ? "Sign In" : "Create Account"}
+                {mode === "signin" ? "Đăng nhập" : "Tạo tài khoản"}
               </Text>
             )}
           </TouchableOpacity>
-
-          <View className="flex-row items-center my-5">
-            <View className="flex-1 h-px bg-gray-200" />
-            <Text className="mx-3 text-xs text-gray-400">or continue with</Text>
-            <View className="flex-1 h-px bg-gray-200" />
-          </View>
         </View>
       </View>
     </ScrollView>
