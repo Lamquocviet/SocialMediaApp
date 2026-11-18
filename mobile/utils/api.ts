@@ -4,7 +4,6 @@ import { useMemo } from "react";
 import type {
   ConversationResponse,
   MessagesResponse,
-  CreateConversationPayload,
   SendDirectMessagePayload,
   SendGroupMessagePayload,
 } from "@/types/chat";
@@ -18,7 +17,6 @@ export const API_BASE_URL = RAW_API_BASE_URL.endsWith("/api")
 
 export const SOCKET_BASE_URL = RAW_API_BASE_URL.replace(/\/$/, "");
 const AUTH_TOKEN_KEY = "authToken";
-// ! 🔥 localhost api would not work on your actual physical device
 
 export const getAuthToken = (): Promise<string | null> =>
   SecureStore.getItemAsync(AUTH_TOKEN_KEY);

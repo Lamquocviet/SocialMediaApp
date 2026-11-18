@@ -41,10 +41,7 @@ const COLORS = {
   sub: "#6B7280",
 };
 
-// ========================================
 // HELPERS
-// ========================================
-
 const formatTime = (iso: string) => {
   const d = new Date(iso);
 
@@ -54,10 +51,7 @@ const formatTime = (iso: string) => {
   )}`;
 };
 
-// ========================================
 // AVATAR
-// ========================================
-
 function Avatar({ uri, size = 44 }: { uri?: string | null; size?: number }) {
   const sizeClass =
     size === 24 ? "h-6 w-6" : size === 44 ? "h-11 w-11" : "h-12 w-12";
@@ -86,10 +80,7 @@ function Avatar({ uri, size = 44 }: { uri?: string | null; size?: number }) {
   );
 }
 
-// ========================================
 // CHAT ROOM
-// ========================================
-
 export default function ChatRoom({
   conversationId,
   recipientId,
@@ -169,10 +160,7 @@ export default function ChatRoom({
 
   const lastMessageId = conversation?.lastMessage?._id;
 
-  // ========================================
   // SEND MESSAGE
-  // ========================================
-
   const send = async () => {
     const value = text.trim();
 
@@ -202,10 +190,7 @@ export default function ChatRoom({
     }
   };
 
-  // ========================================
   // RENDER MESSAGE
-  // ========================================
-
   const renderItem = useCallback(
     ({ item, index }: { item: Message; index: number }) => {
       const mine = String(item.senderId) === String(me?._id);
@@ -298,19 +283,12 @@ export default function ChatRoom({
     [messages, me?._id, participantMap, isGroup, lastMessageId, seenByOthers],
   );
 
-  // ========================================
-  // UI
-  // ========================================
-
   return (
     <SafeAreaView
       className="flex-1 bg-white"
       edges={["top", "bottom"]}
     >
-      {/* ================================== */}
       {/* HEADER */}
-      {/* ================================== */}
-
       <View className="flex-row items-center border-b border-slate-100 bg-white px-4 py-3">
         {/* Back */}
         <TouchableOpacity
@@ -389,10 +367,7 @@ export default function ChatRoom({
         </View>
       </View>
 
-      {/* ================================== */}
       {/* CHAT CONTENT */}
-      {/* ================================== */}
-
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -446,10 +421,7 @@ export default function ChatRoom({
           />
         )}
 
-        {/* ================================== */}
         {/* INPUT BAR */}
-        {/* ================================== */}
-
         <View className="flex-row items-center gap-2.5 border-t border-slate-100 bg-white px-3 py-2">
           {/* Attachment */}
           <TouchableOpacity
