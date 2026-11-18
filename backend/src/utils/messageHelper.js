@@ -8,7 +8,9 @@ export const updateConversationAfterCreateMessage = (
     lastMessageAt: message.createdAt,
     lastMessage: {
       _id: message._id,
-      content: message.content,
+      content:
+        message.content ||
+        (message.imgUrl ? "Hình ảnh" : message.audioUrl ? "Tin nhắn thoại" : ""),
       senderId,
       createdAt: message.createdAt,
     },

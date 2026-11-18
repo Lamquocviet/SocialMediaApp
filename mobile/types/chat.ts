@@ -1,5 +1,11 @@
 export type ConversationType = "direct" | "group";
 
+export interface MediaFile {
+  uri: string;
+  name: string;
+  type: string;
+}
+
 export interface Participant {
   _id: string;
   displayName: string;
@@ -56,6 +62,8 @@ export interface Message {
   senderId: string;
   content: string | null;
   imgUrl?: string | null;
+  audioUrl?: string | null;
+  audioDuration?: number | null;
   updatedAt?: string | null;
   createdAt: string;
   isOwn?: boolean;
@@ -66,21 +74,39 @@ export interface MessagesResponse {
   nextCursor: string | null;
 }
 
-export interface CreateConversationPayload {
-  type: ConversationType;
-  name?: string;
-  memberIds: string[];
-}
-
 export interface SendDirectMessagePayload {
   recipientId?: string;
   conversationId?: string;
   content?: string;
-  imgUrl?: string;
+  image?: MediaFile;
+  audio?: MediaFile;
+  audioDuration?: number;
 }
 
 export interface SendGroupMessagePayload {
   conversationId: string;
   content?: string;
-  imgUrl?: string;
+  image?: MediaFile;
+  audio?: MediaFile;
+  audioDuration?: number;
 }
+
+export type CreateDirectConversationPayload = {
+  type: "direct";
+  memberIds: string[];
+};
+
+export type CreateGroupConversationPayload = {
+  type: "group";
+  name: string;
+  memberIds: string[];
+  avatar?: {
+    uri: string;
+    name: string;
+    type: string;
+  };
+};
+
+export type CreateConversationPayload =
+  | CreateDirectConversationPayload
+  | CreateGroupConversationPayload;

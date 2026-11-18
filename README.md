@@ -20,10 +20,9 @@ SocialApp là ứng dụng mạng xã hội đa nền tảng hiện đại, đư
 - ❤️ **Tương tác bài viết:** Thích và bình luận bài viết thông qua giao diện tương tác.
 - 🔔 **Thông báo:** Nhận thông báo khi có người thích hoặc bình luận bài viết.
 - 👥 **Kết bạn:** Gửi, nhận và quản lý lời mời kết bạn cùng danh sách bạn bè.
-- 💬 **Nhắn tin 1-1:** Trò chuyện riêng tư giữa hai người dùng, hỗ trợ xóa tin nhắn bằng thao tác nhấn giữ.
-- 👨‍👩‍👧‍👦 **Trò chuyện nhóm:** Tạo nhóm chat, quản lý thành viên và chia sẻ tin nhắn trong nhóm.
+- 💬 **Nhắn tin 1-1:** Trò chuyện riêng tư giữa hai người dùng, hỗ trợ gửi tin nhắn văn bản, hình ảnh và tin nhắn thoại
+- 👨‍👩‍👧‍👦 **Trò chuyện nhóm:** Tạo nhóm chat, quản lý thành viên và hỗ trợ gửi tin nhắn văn bản, hình ảnh và tin nhắn thoại
 - 👤 **Hồ sơ cá nhân:** Xem và chỉnh sửa thông tin cá nhân.
-- 🔎 **Tìm kiếm:** Khám phá nội dung và các bài viết nổi bật.
 - 🚪 **Đăng xuất:** Kết thúc phiên đăng nhập và quay lại màn hình đăng nhập.
 - ⚡ **Nhắn tin thời gian thực:** Gửi và nhận tin nhắn tức thì bằng Socket.IO.
 

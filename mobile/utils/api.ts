@@ -7,6 +7,7 @@ import type {
   SendDirectMessagePayload,
   SendGroupMessagePayload,
 } from "@/types/chat";
+import { buildMessageForm, multipartConfig } from "./buildMessageForm";
 
 const RAW_API_BASE_URL =
   process.env.EXPO_PUBLIC_API_URL || "http://192.168.1.22:5001";
@@ -90,14 +91,22 @@ export const chatService = {
     api: AxiosInstance,
     payload: SendDirectMessagePayload,
   ) => {
-    const response = await api.post("/messages/direct", payload);
+    const response = await api.post(
+      "/messages/direct",
+      buildMessageForm(payload),
+      multipartConfig,
+    );
 
     return response.data.message;
   },
 
   // 4. Gửi tin nhắn nhóm
   sendGroupMessage: async (api: AxiosInstance, payload: SendGroupMessagePayload) => {
-    const response = await api.post("/messages/group", payload);
+    const response = await api.post(
+      "/messages/group",
+      buildMessageForm(payload),
+      multipartConfig,
+    );
 
     return response.data.message;
   },

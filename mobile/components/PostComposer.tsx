@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
+import UserAvatar from "./UserAvatar";
 
 const PostComposer = () => {
   const {
@@ -27,17 +28,17 @@ const PostComposer = () => {
   return (
     <View className="border-b border-gray-100 p-4 bg-white">
       <View className="flex-row">
-        <Image
-          source={{
-            uri:
-              currentUser?.profilePicture || "https://ui-avatars.com/api/?name=User",
-          }}
-          className="w-12 h-12 rounded-full mr-3"
-        />
+        <View className="mr-3">
+          <UserAvatar
+            displayName={currentUser?.displayName}
+            profilePicture={currentUser?.profilePicture}
+            size={48}
+          />
+        </View>
         <View className="flex-1">
           <TextInput
             className="text-gray-900 text-lg"
-            placeholder="What's happening?"
+            placeholder="Bạn đang nghĩ gì?"
             placeholderTextColor="#657786"
             multiline
             value={content}
@@ -78,7 +79,7 @@ const PostComposer = () => {
             <Feather
               name="image"
               size={20}
-              color="#1DA1F2"
+              color="#3B2FD0"
             />
           </TouchableOpacity>
           <TouchableOpacity
@@ -88,7 +89,7 @@ const PostComposer = () => {
             <Feather
               name="camera"
               size={20}
-              color="#1DA1F2"
+              color="#3B2FD0"
             />
           </TouchableOpacity>
         </View>
@@ -104,7 +105,9 @@ const PostComposer = () => {
 
           <TouchableOpacity
             className={`px-6 py-2 rounded-full ${
-              content.trim() || selectedImage ? "bg-blue-500" : "bg-gray-300"
+              content.trim() || selectedImage
+                ? "bg-[#3B2FD0] active:bg-[#3025B5]"
+                : "bg-gray-300"
             }`}
             onPress={createPost}
             disabled={isCreating || !(content.trim() || selectedImage)}
@@ -120,7 +123,7 @@ const PostComposer = () => {
                   content.trim() || selectedImage ? "text-white" : "text-gray-500"
                 }`}
               >
-                Post
+                Đăng
               </Text>
             )}
           </TouchableOpacity>

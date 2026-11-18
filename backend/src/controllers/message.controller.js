@@ -5,6 +5,31 @@ import {
   updateConversationAfterCreateMessage,
 } from "../utils/messageHelper.js";
 import { io } from "../socket/index.js";
+import {
+  uploadImageFromBuffer,
+  uploadAudioFromBuffer,
+} from "../utils/uploadImage.js";
+
+const uploadAttachments = async (req) => {
+  const imageFile = req.files?.image?.[0];
+  const audioFile = req.files?.audio?.[0];
+
+  const [img, audio] = await Promise.all([
+    imageFile ? uploadImageFromBuffer(imageFile.buffer) : null,
+    audioFile ? uploadAudioFromBuffer(audioFile.buffer) : null,
+  ]);
+
+  const duration = Number(req.body.audioDuration);
+
+  return {
+    imgUrl: img?.secure_url,
+    audioUrl: audio?.secure_url,
+    audioDuration: audio && Number.isFinite(duration) ? duration : undefined,
+  };
+};
+
+const hasAttachment = (req) =>
+  !!(req.files?.image?.length || req.files?.audio?.length);
 
 export const sendDirectMessage = async (req, res) => {
   try {
@@ -13,8 +38,8 @@ export const sendDirectMessage = async (req, res) => {
 
     let conversation;
 
-    if (!content) {
-      return res.status(400).json({ message: "Thiếu nội dung" });
+    if (!content && !hasAttachment(req)) {
+      return res.status(400).json({ message: "Thiếu nội dung, ảnh hoặc audio" });
     }
 
     if (conversationId) {
@@ -33,10 +58,13 @@ export const sendDirectMessage = async (req, res) => {
       });
     }
 
+    const attachments = await uploadAttachments(req);
+
     const message = await Message.create({
       conversationId: conversation._id,
       senderId,
       content,
+      ...attachments,
     });
 
     updateConversationAfterCreateMessage(conversation, message, senderId);
@@ -58,14 +86,16 @@ export const sendGroupMessage = async (req, res) => {
     const senderId = req.user._id;
     const conversation = req.conversation;
 
-    if (!content) {
-      return res.status(400).json("Thiếu nội dung");
+    if (!content && !hasAttachment(req)) {
+      return res.status(400).json({ message: "Thiếu nội dung, ảnh hoặc audio" });
     }
 
+    const attachments = await uploadAttachments(req);
     const message = await Message.create({
       conversationId,
       senderId,
       content,
+      ...attachments,
     });
 
     updateConversationAfterCreateMessage(conversation, message, senderId);

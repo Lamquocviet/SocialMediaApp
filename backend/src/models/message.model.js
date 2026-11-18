@@ -20,6 +20,8 @@ const messageSchema = new mongoose.Schema(
     imgUrl: {
       type: String,
     },
+    audioUrl: { type: String },
+    audioDuration: { type: Number },
   },
   {
     timestamps: true,

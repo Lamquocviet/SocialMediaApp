@@ -12,13 +12,14 @@ interface NotificationCardProps {
 const NotificationCard = ({ notification, onDelete }: NotificationCardProps) => {
   const getNotificationText = () => {
     const name = `${notification.from.displayName} `;
+
     switch (notification.type) {
       case "like":
-        return `${name} liked your post`;
+        return `${name}đã thích bài viết của bạn`;
       case "comment":
-        return `${name} commented on your post`;
+        return `${name}đã bình luận về bài viết của bạn`;
       case "follow":
-        return `${name} started following you`;
+        return `${name}đã bắt đầu theo dõi bạn`;
       default:
         return "";
     }
@@ -62,18 +63,14 @@ const NotificationCard = ({ notification, onDelete }: NotificationCardProps) => 
   };
 
   const handleDelete = () => {
-    Alert.alert(
-      "Delete Notification",
-      "Are you sure you want to delete this notification?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => onDelete(notification._id),
-        },
-      ],
-    );
+    Alert.alert("Xóa thông báo", "Bạn có chắc chắn muốn xóa thông báo này không?", [
+      { text: "Hủy", style: "cancel" },
+      {
+        text: "Xóa",
+        style: "destructive",
+        onPress: () => onDelete(notification._id),
+      },
+    ]);
   };
 
   return (
@@ -100,6 +97,7 @@ const NotificationCard = ({ notification, onDelete }: NotificationCardProps) => 
                 </Text>
                 <Text className="text-gray-500"> @{notification.from.username}</Text>
               </Text>
+
               <Text className="text-gray-700 text-sm mb-2">
                 {getNotificationText()}
               </Text>
@@ -125,6 +123,7 @@ const NotificationCard = ({ notification, onDelete }: NotificationCardProps) => 
               >
                 {notification.post.content}
               </Text>
+
               {notification.post.image && (
                 <Image
                   source={{ uri: notification.post.image }}
@@ -137,7 +136,8 @@ const NotificationCard = ({ notification, onDelete }: NotificationCardProps) => 
 
           {notification.comment && (
             <View className="bg-blue-50 rounded-lg p-3 mb-2">
-              <Text className="text-gray-600 text-xs mb-1">Comment:</Text>
+              <Text className="text-gray-600 text-xs mb-1">Bình luận:</Text>
+
               <Text
                 className="text-gray-700 text-sm"
                 numberOfLines={2}
@@ -155,4 +155,5 @@ const NotificationCard = ({ notification, onDelete }: NotificationCardProps) => 
     </View>
   );
 };
+
 export default NotificationCard;

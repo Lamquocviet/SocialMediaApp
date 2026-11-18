@@ -36,7 +36,7 @@ export const useProfile = () => {
 
   const { currentUser } = useCurrentUser();
 
-  // Mutation cập nhật profile
+  // Mutation cập nhật hồ sơ cá nhân
   const updateProfileMutation = useMutation({
     mutationFn: async (data: UpdateProfileData) => {
       const form = new FormData();
@@ -75,18 +75,18 @@ export const useProfile = () => {
 
       setIsEditModalVisible(false);
 
-      Alert.alert("Success", "Profile updated successfully!");
+      Alert.alert("Thành công", "Cập nhật hồ sơ cá nhân thành công!");
     },
 
     onError: (error: any) => {
       Alert.alert(
-        "Error",
-        error.response?.data?.error || "Failed to update profile",
+        "Lỗi",
+        error.response?.data?.error || "Không thể cập nhật hồ sơ. Vui lòng thử lại.",
       );
     },
   });
 
-  // Mở modal chỉnh sửa
+  // Mở modal chỉnh sửa hồ sơ
   const openEditModal = () => {
     if (currentUser) {
       setFormData({
@@ -99,7 +99,7 @@ export const useProfile = () => {
     setIsEditModalVisible(true);
   };
 
-  // Cập nhật từng field
+  // Cập nhật từng trường thông tin
   const updateFormField = (field: keyof ProfileFormData, value: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -107,12 +107,12 @@ export const useProfile = () => {
     }));
   };
 
-  // Cập nhật thông tin cá nhân
+  // Lưu thông tin hồ sơ cá nhân
   const saveProfile = () => {
     updateProfileMutation.mutate(formData);
   };
 
-  // Upload avatar hoặc banner
+  // Tải ảnh đại diện hoặc ảnh bìa lên
   const uploadProfileImage = (
     image: UpdateProfileData["image"],
     imageType: "avatar" | "banner",

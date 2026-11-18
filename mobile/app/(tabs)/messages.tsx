@@ -59,7 +59,7 @@ export default function ChatListScreen() {
         const created = await createConversation.mutateAsync({
           type: "direct",
           memberIds: [user._id],
-        });
+        } as any);
 
         conversationId = created._id;
       }

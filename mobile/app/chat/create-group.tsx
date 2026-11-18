@@ -183,25 +183,6 @@ export default function CreateGroupScreen() {
           />
           <Text className="text-[15px] font-semibold text-[#3B2FC9]">Quay lại</Text>
         </Pressable>
-
-        <Text className="text-lg font-bold text-gray-900">Tạo Nhóm Mới</Text>
-
-        <Pressable
-          onPress={handleCreate}
-          disabled={!canCreate}
-          className={`rounded-xl px-5 py-2.5 ${
-            canCreate ? "bg-[#3B2FC9]" : "bg-[#B9B4F0]"
-          }`}
-        >
-          {createGroup.isPending ? (
-            <ActivityIndicator
-              size="small"
-              color="#fff"
-            />
-          ) : (
-            <Text className="font-bold text-white">Tạo</Text>
-          )}
-        </Pressable>
       </View>
 
       <FlatList

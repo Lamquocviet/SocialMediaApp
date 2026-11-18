@@ -50,8 +50,8 @@ const ProfileScreens = () => {
 
     if (!permission.granted) {
       Alert.alert(
-        "Permission required",
-        "Please allow access to your photos to update your image.",
+        "Yêu cầu quyền truy cập",
+        "Vui lòng cho phép truy cập thư viện ảnh để cập nhật hình ảnh.",
       );
       return;
     }
@@ -94,13 +94,13 @@ const ProfileScreens = () => {
       className="flex-1 bg-white"
       edges={["top"]}
     >
-      {/* Header */}
+      {/* Thanh tiêu đề */}
       <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-100">
         <View>
           <Text className="text-xl font-bold text-gray-900">
             {currentUser.displayName}
           </Text>
-          <Text className="text-gray-500 text-sm">{userPosts.length} Posts</Text>
+          <Text className="text-gray-500 text-sm">{userPosts.length} bài viết</Text>
         </View>
         <SignOutButton />
       </View>
@@ -120,7 +120,7 @@ const ProfileScreens = () => {
           />
         }
       >
-        {/* Banner */}
+        {/* Ảnh bìa */}
         <View>
           <Image
             source={{ uri: currentUser.bannerImage || DEFAULT_BANNER }}
@@ -143,7 +143,7 @@ const ProfileScreens = () => {
 
         <View className="px-4 pb-4 border-b border-gray-100">
           <View className="flex-row justify-between items-end -mt-16 mb-4">
-            {/* Avatar */}
+            {/* Ảnh đại diện */}
             <View>
               <View className="border-4 border-white rounded-full">
                 <UserAvatar
@@ -153,7 +153,7 @@ const ProfileScreens = () => {
                 />
               </View>
               <TouchableOpacity
-                className="absolute right-0 bottom-0 bg-[#1DA1F2] w-9 h-9 rounded-full items-center justify-center border-2 border-white"
+                className="absolute right-0 bottom-0 bg-[#3B2FD0] w-9 h-9 rounded-full items-center justify-center border-2 border-white"
                 onPress={() => pickImage("avatar")}
                 disabled={isUpdating}
                 activeOpacity={0.8}
@@ -170,7 +170,7 @@ const ProfileScreens = () => {
               className="border border-gray-300 px-6 py-2 rounded-full"
               onPress={openEditModal}
             >
-              <Text className="font-semibold text-gray-900">Edit profile</Text>
+              <Text className="font-semibold text-gray-900">Chỉnh sửa hồ sơ</Text>
             </TouchableOpacity>
           </View>
 
@@ -185,7 +185,9 @@ const ProfileScreens = () => {
                 color="#1DA1F2"
               />
             </View>
+
             <Text className="text-gray-500 mb-2">@{currentUser.username}</Text>
+
             <Text className="text-gray-900 mb-3">{currentUser.bio}</Text>
 
             <View className="flex-row items-center mb-2">
@@ -204,7 +206,7 @@ const ProfileScreens = () => {
                 color="#657786"
               />
               <Text className="text-gray-500 ml-2">
-                Joined {format(new Date(currentUser.createdAt), "MMMM yyyy")}
+                Tham gia từ {format(new Date(currentUser.createdAt), "MM/yyyy")}
               </Text>
             </View>
 
@@ -212,13 +214,14 @@ const ProfileScreens = () => {
               <TouchableOpacity className="mr-6">
                 <Text className="text-gray-900">
                   <Text className="font-bold">{currentUser.following?.length}</Text>
-                  <Text className="text-gray-500"> Following</Text>
+                  <Text className="text-gray-500"> Đang theo dõi</Text>
                 </Text>
               </TouchableOpacity>
+
               <TouchableOpacity>
                 <Text className="text-gray-900">
                   <Text className="font-bold">{currentUser.followers?.length}</Text>
-                  <Text className="text-gray-500"> Followers</Text>
+                  <Text className="text-gray-500"> Người theo dõi</Text>
                 </Text>
               </TouchableOpacity>
             </View>
@@ -237,7 +240,7 @@ const ProfileScreens = () => {
         isUpdating={isUpdating}
       />
 
-      {/* Overlay loading khi đang upload */}
+      {/* Hiển thị trạng thái tải khi đang tải ảnh lên */}
       {isUpdating && !isEditModalVisible && (
         <View className="absolute inset-0 bg-black/30 items-center justify-center">
           <ActivityIndicator

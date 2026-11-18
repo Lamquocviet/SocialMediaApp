@@ -8,16 +8,12 @@ import {
 import { chatService, useApiClient } from "@/utils/api";
 
 import type {
-  CreateConversationPayload,
   SendDirectMessagePayload,
   SendGroupMessagePayload,
   Message,
 } from "@/types/chat";
 
-// ========================================
 // QUERY KEYS
-// ========================================
-
 export const chatKeys = {
   all: ["chat"] as const,
 
@@ -27,10 +23,7 @@ export const chatKeys = {
     [...chatKeys.all, "messages", conversationId] as const,
 };
 
-// ========================================
 // GET CONVERSATIONS
-// ========================================
-
 export const useConversations = () => {
   const api = useApiClient();
 
@@ -43,10 +36,7 @@ export const useConversations = () => {
   });
 };
 
-// ========================================
 // GET MESSAGES
-// ========================================
-
 export const useMessages = (conversationId: string) => {
   const api = useApiClient();
 
@@ -66,10 +56,7 @@ export const useMessages = (conversationId: string) => {
   });
 };
 
-// ========================================
 // SEND DIRECT MESSAGE
-// ========================================
-
 export const useSendDirectMessage = () => {
   const api = useApiClient();
   const queryClient = useQueryClient();
@@ -100,10 +87,7 @@ export const useSendDirectMessage = () => {
   });
 };
 
-// ========================================
 // SEND GROUP MESSAGE
-// ========================================
-
 export const useSendGroupMessage = () => {
   const api = useApiClient();
   const queryClient = useQueryClient();
@@ -126,10 +110,7 @@ export const useSendGroupMessage = () => {
   });
 };
 
-// ========================================
 // CREATE CONVERSATION
-// ========================================
-
 export const useCreateConversation = () => {
   const api = useApiClient();
   const queryClient = useQueryClient();
@@ -144,10 +125,7 @@ export const useCreateConversation = () => {
   });
 };
 
-// ========================================
 // MARK AS SEEN
-// ========================================
-
 export const useMarkAsSeen = () => {
   const api = useApiClient();
   const queryClient = useQueryClient();

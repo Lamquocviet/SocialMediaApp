@@ -2,7 +2,6 @@ import React, { useMemo, useState } from "react";
 import {
   View,
   Text,
-  Image,
   Pressable,
   FlatList,
   ActivityIndicator,
@@ -12,6 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import UserAvatar from "@/components/UserAvatar";
 
 import {
   useFriendRequests,
@@ -20,15 +20,13 @@ import {
 } from "@/hooks/useFriend";
 import { AxiosError } from "axios";
 
-// ========================================
 // TYPES (khớp response /friends/requests)
-// ========================================
 
 type RequestUser = {
   _id: string;
   displayName: string;
   username: string;
-  avatarUrl?: string | null; // backend chưa trả thì dùng chữ cái đầu
+  profilePicture?: string | null;
   isOnline?: boolean;
 };
 
@@ -48,10 +46,7 @@ type SentRequest = {
 
 type Tab = "received" | "sent";
 
-// ========================================
 // HELPERS
-// ========================================
-
 const matchUser = (u: RequestUser, keyword: string) => {
   const k = keyword.trim().toLowerCase().replace(/^@/, "");
   if (!k) return true;
@@ -60,10 +55,7 @@ const matchUser = (u: RequestUser, keyword: string) => {
   );
 };
 
-// ========================================
 // POPUP XÁC NHẬN TỪ CHỐI
-// ========================================
-
 function ConfirmDeclineModal({
   visible,
   user,
@@ -137,39 +129,7 @@ function ConfirmDeclineModal({
   );
 }
 
-// ========================================
-// AVATAR
-// ========================================
-
-function Avatar({ user }: { user: RequestUser }) {
-  const initials = user.displayName?.trim()?.[0]?.toUpperCase() ?? "?";
-
-  return (
-    <View className="w-14 h-14 relative">
-      {user.avatarUrl ? (
-        <Image
-          source={{ uri: user.avatarUrl }}
-          className="w-14 h-14 rounded-full"
-        />
-      ) : (
-        <View className="w-14 h-14 rounded-full bg-indigo-100 items-center justify-center">
-          <Text className="text-[22px] font-bold text-indigo-800">{initials}</Text>
-        </View>
-      )}
-      {user.isOnline !== undefined && (
-        <View
-          className={`absolute right-0 bottom-0 w-3.5 h-3.5 rounded-full border-2 border-white ${
-            user.isOnline ? "bg-emerald-400" : "bg-slate-300"
-          }`}
-        />
-      )}
-    </View>
-  );
-}
-
-// ========================================
 // CARD: LỜI MỜI ĐÃ NHẬN
-// ========================================
 function ReceivedCard({ item }: { item: ReceivedRequest }) {
   const accept = useAcceptFriendRequest();
   const decline = useDeclineFriendRequest();
@@ -210,7 +170,11 @@ function ReceivedCard({ item }: { item: ReceivedRequest }) {
     <View className="mb-4 rounded-2xl border border-[#E8E5F5] bg-white p-4 shadow-md shadow-indigo-900/10">
       {/* User information */}
       <View className="flex-row items-center gap-3">
-        <Avatar user={item.from} />
+        <UserAvatar
+          displayName={item.from.displayName}
+          profilePicture={item.from.profilePicture}
+          size={56}
+        />
 
         <View className="min-w-0 flex-1">
           <Text
@@ -294,17 +258,18 @@ function ReceivedCard({ item }: { item: ReceivedRequest }) {
   );
 }
 
-// ========================================
 // CARD: LỜI MỜI ĐÃ GỬI
-// ========================================
-
 function SentCard({ item }: { item: SentRequest }) {
-  const cancel = useDeclineFriendRequest(); // API decline dùng chung cho huỷ lời mời
+  const cancel = useDeclineFriendRequest();
 
   return (
     <View className="mb-4 rounded-2xl border border-[#E8E5F5] bg-white p-4 shadow-md shadow-indigo-900/10">
       <View className="flex-row items-center gap-3">
-        <Avatar user={item.to} />
+        <UserAvatar
+          displayName={item.to.displayName}
+          profilePicture={item.to.profilePicture}
+          size={56}
+        />
 
         <View className="min-w-0 flex-1">
           <Text
@@ -351,10 +316,7 @@ function SentCard({ item }: { item: SentRequest }) {
   );
 }
 
-// ========================================
 // SCREEN
-// ========================================
-
 export default function FriendRequestsScreen() {
   const [tab, setTab] = useState<Tab>("received");
 
@@ -377,7 +339,7 @@ export default function FriendRequestsScreen() {
     [sent, keyword],
   );
 
-  // ---------- Tab switcher ----------
+  //Tab switcher
   const TabButton = ({
     k,
     label,
@@ -418,7 +380,7 @@ export default function FriendRequestsScreen() {
     );
   };
 
-  // ---------- Header (tabs + search) ----------
+  // Header (tabs + search)
   const Header = (
     <View className="px-3 pt-3 mb-1.5">
       <View className="flex-row bg-[#E0E3FA] rounded-2xl p-1">
@@ -438,7 +400,6 @@ export default function FriendRequestsScreen() {
     </View>
   );
 
-  // ---------- Empty ----------
   const Empty = (
     <View className="flex-1 items-center justify-center py-[60px] px-6 gap-2">
       <Ionicons
@@ -461,7 +422,6 @@ export default function FriendRequestsScreen() {
     </View>
   );
 
-  // ---------- Loading / Error ----------
   if (isLoading) {
     return (
       <View className="flex-1 items-center justify-center bg-[#EEF0FD] p-6">
@@ -489,12 +449,17 @@ export default function FriendRequestsScreen() {
     );
   }
 
-  // ---------- Main ----------
   return (
     <SafeAreaView
       className="flex-1 bg-[#EEF0FD] pt-[50px]"
       edges={["bottom"]}
     >
+      <View className="px-4 pt-2 pb-2">
+        <Text className="text-2xl font-bold text-[#1E1B4B]">Lời mời kết bạn</Text>
+        <Text className="text-sm text-gray-500 mt-1">
+          Quản lý các lời mời kết bạn của bạn
+        </Text>
+      </View>
       {Header}
 
       {tab === "received" ? (

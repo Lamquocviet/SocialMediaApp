@@ -17,6 +17,7 @@ import { ENV } from "./config/env.js";
 import { connectDB } from "./config/db.js";
 import { arcjetMiddleware } from "./middleware/arcjet.middleware.js";
 import { protectRoute } from "./middleware/auth.middleware.js";
+import multer from "multer";
 
 const app = express();
 
@@ -43,7 +44,17 @@ app.use("/api/messages", messageRoutes);
 app.use("/api/friends", friendRoutes);
 
 // error handling middleware
+
 app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    return res.status(400).json({
+      message: err.code === "LIMIT_FILE_SIZE" ? "File tối đa 10MB" : err.message,
+    });
+  }
+  if (err?.message === "Only image or audio files are allowed") {
+    return res.status(400).json({ message: "Chỉ chấp nhận file ảnh hoặc audio" });
+  }
+
   console.error("Unhandled error:", err);
   res.status(500).json({ error: err.message || "Internal server error" });
 });

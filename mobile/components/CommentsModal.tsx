@@ -11,6 +11,7 @@ import {
   TextInput,
   ActivityIndicator,
 } from "react-native";
+import UserAvatar from "./UserAvatar";
 
 interface CommentsModalProps {
   selectedPost: Post;
@@ -36,20 +37,21 @@ const CommentsModal = ({ selectedPost, onClose }: CommentsModalProps) => {
       {/* MODAL HEADER */}
       <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-100">
         <TouchableOpacity onPress={handleClose}>
-          <Text className="text-blue-500 text-lg">Close</Text>
+          <Text className="text-blue-500 text-lg">Đóng</Text>
         </TouchableOpacity>
-        <Text className="text-lg font-semibold">Comments</Text>
+        <Text className="text-lg font-semibold">Bình luận</Text>
         <View className="w-12" />
       </View>
 
       {selectedPost && (
-        <ScrollView className="flex-1">
+        <ScrollView className="flex-1 ">
           {/* ORIGINAL POST */}
           <View className="border-b border-gray-100 bg-white p-4">
-            <View className="flex-row">
-              <Image
-                source={{ uri: selectedPost.user.profilePicture }}
-                className="size-12 rounded-full mr-3"
+            <View className="flex-row ">
+              <UserAvatar
+                displayName={selectedPost.user.displayName}
+                profilePicture={selectedPost.user.profilePicture}
+                size={40}
               />
 
               <View className="flex-1">
@@ -86,11 +88,13 @@ const CommentsModal = ({ selectedPost, onClose }: CommentsModalProps) => {
               className="border-b border-gray-100 bg-white p-4"
             >
               <View className="flex-row">
-                <Image
-                  source={{ uri: comment.user.profilePicture }}
-                  className="w-10 h-10 rounded-full mr-3"
-                />
-
+                <View className="mr-3">
+                  <UserAvatar
+                    displayName={comment.user.displayName}
+                    profilePicture={comment.user.profilePicture}
+                    size={40}
+                  />
+                </View>
                 <View className="flex-1">
                   <View className="flex-row items-center mb-1">
                     <Text className="font-bold text-gray-900 mr-1">
