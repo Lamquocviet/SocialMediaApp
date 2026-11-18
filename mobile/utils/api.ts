@@ -112,11 +112,23 @@ export const chatService = {
 
   // 6. Tạo cuộc hội thoại mới
   // POST /conversations
-  createConversation: async (
+  createGroup: async (
     api: AxiosInstance,
-    payload: CreateConversationPayload,
+    payload: {
+      name: string;
+      memberIds: string[];
+      avatar?: { uri: string; name: string; type: string };
+    },
   ) => {
-    const response = await api.post("/conversations", payload);
+    const form = new FormData();
+    form.append("type", "group");
+    form.append("name", payload.name);
+    form.append("memberIds", JSON.stringify(payload.memberIds));
+    if (payload.avatar) form.append("avatar", payload.avatar as any);
+
+    const response = await api.post("/conversations", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
 
     return response.data.conversation;
   },

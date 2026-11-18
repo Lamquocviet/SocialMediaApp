@@ -84,7 +84,7 @@ export const acceptFriendRequest = async (req, res) => {
     await FriendRequest.findByIdAndDelete(requestId);
 
     const from = await User.findById(request.from)
-      .select("_id displayName avatarUrl")
+      .select("_id displayName profilePicture")
       .lean();
 
     return res.status(200).json({
@@ -92,7 +92,7 @@ export const acceptFriendRequest = async (req, res) => {
       newFriend: {
         _id: from?._id,
         displayName: from?.displayName,
-        avatarUrl: from?.avatarUrl,
+        profilePicture: from?.profilePicture,
       },
     });
   } catch (error) {
@@ -141,8 +141,8 @@ export const getAllFriends = async (req, res) => {
         },
       ],
     })
-      .populate("userA", "_id displayName avatarUrl username")
-      .populate("userB", "_id displayName avatarUrl username")
+      .populate("userA", "_id displayName profilePicture username")
+      .populate("userB", "_id displayName profilePicture username")
       .lean();
 
     if (!friendships.length) {
@@ -160,28 +160,11 @@ export const getAllFriends = async (req, res) => {
   }
 };
 
-// export const getFriendRequests = async (req, res) => {
-//   try {
-//     const userId = req.user._id;
-
-//     const populateFields = "_id username displayName avatarUrl";
-
-//     const [sent, received] = await Promise.all([
-//       FriendRequest.find({ from: userId }).populate("to", populateFields),
-//       FriendRequest.find({ to: userId }).populate("from", populateFields),
-//     ]);
-
-//     res.status(200).json({ sent, received });
-//   } catch (error) {
-//     console.error("Lỗi khi lấy danh sách yêu cầu kết bạn", error);
-//     return res.status(500).json({ message: "Lỗi hệ thống" });
-//   }
-// };
 export const getFriendRequests = async (req, res) => {
   try {
     const userId = req.user._id;
 
-    const populateFields = "_id username displayName avatarUrl";
+    const populateFields = "_id username displayName profilePicture";
 
     const [sent, received, sentCount, receivedCount] = await Promise.all([
       FriendRequest.find({ from: userId }).populate("to", populateFields).lean(),

@@ -135,13 +135,11 @@ export const useCreateConversation = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (payload: CreateConversationPayload) =>
-      chatService.createConversation(api, payload),
+    mutationFn: (payload: Parameters<typeof chatService.createGroup>[1]) =>
+      chatService.createGroup(api, payload),
 
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: chatKeys.conversations(),
-      });
+      await queryClient.invalidateQueries({ queryKey: chatKeys.conversations() });
     },
   });
 };

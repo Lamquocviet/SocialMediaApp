@@ -75,7 +75,8 @@ export default function ConversationItem({
     ? (conversation.group?.name ?? "Chat nhóm")
     : (otherUser?.displayName ?? "Người dùng");
 
-  const avatarUrl = otherUser?.profilePicture;
+  const groupAvatarUrl = conversation.group?.avatarUrl;
+  const avatarUrl = isGroup ? groupAvatarUrl : otherUser?.profilePicture;
 
   const lastMessage = conversation.lastMessage;
 
@@ -128,7 +129,7 @@ export default function ConversationItem({
       {/*  avatar | nội dung */}
       <View className="flex-row items-center">
         {/* Avatar */}
-        {isGroup ? (
+        {isGroup && !groupAvatarUrl ? (
           <View
             style={avatarStyle}
             className="items-center justify-center bg-indigo-100"

@@ -1,6 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { friendApi, useApiClient } from "@/utils/api";
 
+export type FriendUser = {
+  _id: string;
+  displayName: string;
+  username: string;
+  profilePicture?: string | null;
+};
 // Query keys: quản lý cache tập trung
 export const friendKeys = {
   all: ["friends"] as const,
@@ -87,5 +93,15 @@ export const useDeclineFriendRequest = () => {
       queryClient.invalidateQueries({ queryKey: friendKeys.requests() });
       queryClient.invalidateQueries({ queryKey: ["users", "search"] });
     },
+  });
+};
+
+export const useFriendsList = () => {
+  const api = useApiClient();
+
+  return useQuery({
+    queryKey: ["friendList"],
+    queryFn: () => friendApi.getFriendsList(api),
+    select: (res) => (res.data.friends ?? []) as FriendUser[],
   });
 };

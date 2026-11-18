@@ -15,6 +15,7 @@ export interface SeenUser {
 
 export interface Group {
   name: string;
+  avatarUrl?: string;
   createdBy: string;
 }
 

@@ -1,25 +1,53 @@
 import Conversation from "../models/conversation.model.js";
 import Message from "../models/message.model.js";
 import { io } from "../socket/index.js";
+import cloudinary from "../config/cloudinary.js";
+import mongoose from "mongoose";
+import Friend from "../models/friend.model.js";
 
+const uploadGroupAvatar = (file) =>
+  new Promise((resolve, reject) => {
+    cloudinary.uploader
+      .upload_stream({ folder: "group_avatars" }, (err, result) =>
+        err ? reject(err) : resolve(result),
+      )
+      .end(file.buffer);
+  });
+
+// multipart gửi memberIds dạng chuỗi JSON, request JSON gửi mảng
+const parseMemberIds = (raw) => {
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [raw];
+    } catch {
+      return [raw];
+    }
+  }
+  return [];
+};
 export const createConversation = async (req, res) => {
   try {
-    const { type, name, memberIds } = req.body;
+    const { type } = req.body;
+    const name = req.body.name?.trim();
     const userId = req.user._id;
+    const userIdStr = String(userId);
 
-    if (
-      !type ||
-      (type === "group" && !name) ||
-      !memberIds ||
-      !Array.isArray(memberIds) ||
-      memberIds.length === 0
-    ) {
-      return res
-        .status(400)
-        .json({ message: "Tên nhóm và danh sách thành viên là bắt buộc" });
+    const memberIds = [
+      ...new Set(parseMemberIds(req.body.memberIds).map(String)),
+    ].filter((id) => id !== userIdStr);
+
+    if (!["direct", "group"].includes(type)) {
+      return res.status(400).json({ message: "Conversation type không hợp lệ" });
+    }
+
+    if (memberIds.length === 0 || !memberIds.every(mongoose.isValidObjectId)) {
+      return res.status(400).json({ message: "Danh sách thành viên không hợp lệ" });
     }
 
     let conversation;
+    let isNew = false;
 
     if (type === "direct") {
       const participantId = memberIds[0];
@@ -30,69 +58,180 @@ export const createConversation = async (req, res) => {
       });
 
       if (!conversation) {
-        conversation = new Conversation({
+        conversation = await Conversation.create({
           type: "direct",
           participants: [{ userId }, { userId: participantId }],
           lastMessageAt: new Date(),
         });
-
-        await conversation.save();
+        isNew = true;
       }
     }
 
     if (type === "group") {
-      conversation = new Conversation({
-        type: "group",
-        participants: [{ userId }, ...memberIds.map((id) => ({ userId: id }))],
-        group: {
-          name,
-          createdBy: userId,
-        },
-        lastMessageAt: new Date(),
+      if (!name) {
+        return res.status(400).json({ message: "Tên nhóm là bắt buộc" });
+      }
+      if (name.length > 50) {
+        return res.status(400).json({ message: "Tên nhóm tối đa 50 ký tự" });
+      }
+      if (memberIds.length < 2) {
+        return res.status(400).json({ message: "Nhóm cần ít nhất 3 thành viên" });
+      }
+
+      // Chỉ cho thêm bạn bè vào nhóm
+      const friendCount = await Friend.countDocuments({
+        $or: [
+          { userA: userId, userB: { $in: memberIds } },
+          { userA: { $in: memberIds }, userB: userId },
+        ],
       });
 
-      await conversation.save();
-    }
+      if (friendCount !== memberIds.length) {
+        return res.status(403).json({ message: "Chỉ có thể thêm bạn bè vào nhóm" });
+      }
 
-    if (!conversation) {
-      return res.status(400).json({ message: "Conversation type không hợp lệ" });
+      let avatarUrl = "";
+      let avatarId = "";
+
+      if (req.file) {
+        const uploaded = await uploadGroupAvatar(req.file);
+        avatarUrl = uploaded.secure_url;
+        avatarId = uploaded.public_id;
+      }
+
+      conversation = await Conversation.create({
+        type: "group",
+        participants: [
+          { userId, role: "owner" },
+          ...memberIds.map((id) => ({ userId: id })),
+        ],
+        group: { name, avatarUrl, avatarId, createdBy: userId },
+        lastMessageAt: new Date(),
+      });
+      isNew = true;
     }
 
     await conversation.populate([
       { path: "participants.userId", select: "displayName profilePicture" },
-      {
-        path: "seenBy",
-        select: "displayName profilePicture",
-      },
+      { path: "seenBy", select: "displayName profilePicture" },
       { path: "lastMessage.senderId", select: "displayName profilePicture" },
     ]);
 
-    const participants = (conversation.participants || []).map((p) => ({
+    const participants = conversation.participants.map((p) => ({
       _id: p.userId?._id,
       displayName: p.userId?.displayName,
       profilePicture: p.userId?.profilePicture ?? null,
+      role: p.role,
       joinedAt: p.joinedAt,
     }));
 
     const formatted = { ...conversation.toObject(), participants };
 
-    if (type === "group") {
-      memberIds.forEach((userId) => {
-        io.to(userId).emit("new-group", formatted);
+    // Chỉ báo realtime khi thật sự tạo mới
+    if (isNew) {
+      participants.forEach((p) => {
+        io.to(String(p._id)).emit("new-group", formatted);
       });
     }
 
-    if (type === "direct") {
-      io.to(userId).emit("new-group", formatted);
-      io.to(memberIds[0]).emit("new-group", formatted);
-    }
-
-    return res.status(201).json({ conversation: formatted });
+    return res.status(isNew ? 201 : 200).json({ conversation: formatted });
   } catch (error) {
     console.error("Lỗi khi tạo conversation", error);
     return res.status(500).json({ message: "Lỗi hệ thống" });
   }
 };
+
+// export const createConversation = async (req, res) => {
+//   try {
+//     const { type, name, memberIds } = req.body;
+//     const userId = req.user._id;
+
+//     if (
+//       !type ||
+//       (type === "group" && !name) ||
+//       !memberIds ||
+//       !Array.isArray(memberIds) ||
+//       memberIds.length === 0
+//     ) {
+//       return res
+//         .status(400)
+//         .json({ message: "Tên nhóm và danh sách thành viên là bắt buộc" });
+//     }
+
+//     let conversation;
+
+//     if (type === "direct") {
+//       const participantId = memberIds[0];
+
+//       conversation = await Conversation.findOne({
+//         type: "direct",
+//         "participants.userId": { $all: [userId, participantId] },
+//       });
+
+//       if (!conversation) {
+//         conversation = new Conversation({
+//           type: "direct",
+//           participants: [{ userId }, { userId: participantId }],
+//           lastMessageAt: new Date(),
+//         });
+
+//         await conversation.save();
+//       }
+//     }
+
+//     if (type === "group") {
+//       conversation = new Conversation({
+//         type: "group",
+//         participants: [{ userId }, ...memberIds.map((id) => ({ userId: id }))],
+//         group: {
+//           name,
+//           createdBy: userId,
+//         },
+//         lastMessageAt: new Date(),
+//       });
+
+//       await conversation.save();
+//     }
+
+//     if (!conversation) {
+//       return res.status(400).json({ message: "Conversation type không hợp lệ" });
+//     }
+
+//     await conversation.populate([
+//       { path: "participants.userId", select: "displayName profilePicture" },
+//       {
+//         path: "seenBy",
+//         select: "displayName profilePicture",
+//       },
+//       { path: "lastMessage.senderId", select: "displayName profilePicture" },
+//     ]);
+
+//     const participants = (conversation.participants || []).map((p) => ({
+//       _id: p.userId?._id,
+//       displayName: p.userId?.displayName,
+//       profilePicture: p.userId?.profilePicture ?? null,
+//       joinedAt: p.joinedAt,
+//     }));
+
+//     const formatted = { ...conversation.toObject(), participants };
+
+//     if (type === "group") {
+//       memberIds.forEach((userId) => {
+//         io.to(userId).emit("new-group", formatted);
+//       });
+//     }
+
+//     if (type === "direct") {
+//       io.to(userId).emit("new-group", formatted);
+//       io.to(memberIds[0]).emit("new-group", formatted);
+//     }
+
+//     return res.status(201).json({ conversation: formatted });
+//   } catch (error) {
+//     console.error("Lỗi khi tạo conversation", error);
+//     return res.status(500).json({ message: "Lỗi hệ thống" });
+//   }
+// };
 
 export const getConversations = async (req, res) => {
   try {

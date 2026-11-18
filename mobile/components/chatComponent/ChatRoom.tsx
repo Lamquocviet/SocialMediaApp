@@ -127,7 +127,7 @@ export default function ChatRoom({
     conversationDisplayName ?? fallbackName ?? (isGroup ? "Nhóm" : "Người dùng");
 
   const headerAvatar = isGroup
-    ? null
+    ? (conversation?.group?.avatarUrl ?? fallbackAvatar ?? null)
     : (other?.profilePicture ?? fallbackAvatar ?? null);
 
   const memberCount = conversation?.participants.length ?? 0;
@@ -326,7 +326,7 @@ export default function ChatRoom({
         </TouchableOpacity>
 
         {/* Avatar */}
-        {isGroup ? (
+        {isGroup && !headerAvatar ? (
           <View className="h-11 w-11 items-center justify-center rounded-full bg-[#EEEBFF]">
             <Ionicons
               name="people"

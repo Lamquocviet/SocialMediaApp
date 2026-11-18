@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   Keyboard,
+  TouchableOpacity,
 } from "react-native";
 
 import { useMe } from "@/hooks/useMe";
@@ -129,7 +130,18 @@ export default function ChatListScreen() {
   const Header = (
     <View className="px-4 pb-3 pt-4">
       {!isSearching && (
-        <Text className="mb-4 text-2xl font-bold text-gray-900">Tin nhắn</Text>
+        <View className="mb-4 flex-row items-center justify-between">
+          <Text className="mb-0 mr-4 text-2xl font-bold text-gray-900">
+            Tin nhắn
+          </Text>
+          <TouchableOpacity onPress={() => router.push("/chat/create-group" as any)}>
+            <Ionicons
+              name="people"
+              size={30}
+              color="#3730A3"
+            />
+          </TouchableOpacity>
+        </View>
       )}
 
       {/* Search */}

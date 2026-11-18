@@ -28,6 +28,8 @@ const groupSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    avatarUrl: { type: String, default: "" },
+    avatarId: { type: String, default: "" },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
