@@ -59,18 +59,18 @@ export const createConversation = async (req, res) => {
     }
 
     await conversation.populate([
-      { path: "participants.userId", select: "displayName avatarUrl" },
+      { path: "participants.userId", select: "displayName profilePicture" },
       {
         path: "seenBy",
-        select: "displayName avatarUrl",
+        select: "displayName profilePicture",
       },
-      { path: "lastMessage.senderId", select: "displayName avatarUrl" },
+      { path: "lastMessage.senderId", select: "displayName profilePicture" },
     ]);
 
     const participants = (conversation.participants || []).map((p) => ({
       _id: p.userId?._id,
       displayName: p.userId?.displayName,
-      avatarUrl: p.userId?.avatarUrl ?? null,
+      profilePicture: p.userId?.profilePicture ?? null,
       joinedAt: p.joinedAt,
     }));
 
@@ -103,22 +103,22 @@ export const getConversations = async (req, res) => {
       .sort({ lastMessageAt: -1, updatedAt: -1 })
       .populate({
         path: "participants.userId",
-        select: "displayName avatarUrl",
+        select: "displayName profilePicture",
       })
       .populate({
         path: "lastMessage.senderId",
-        select: "displayName avatarUrl",
+        select: "displayName profilePicture",
       })
       .populate({
         path: "seenBy",
-        select: "displayName avatarUrl",
+        select: "displayName profilePicture",
       });
 
     const formatted = conversations.map((convo) => {
       const participants = (convo.participants || []).map((p) => ({
         _id: p.userId?._id,
         displayName: p.userId?.displayName,
-        avatarUrl: p.userId?.avatarUrl ?? null,
+        profilePicture: p.userId?.profilePicture ?? null,
         joinedAt: p.joinedAt,
       }));
 

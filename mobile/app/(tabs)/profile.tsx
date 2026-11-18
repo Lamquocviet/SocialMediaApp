@@ -6,6 +6,7 @@ import { usePosts } from "@/hooks/usePosts";
 import { useProfile } from "@/hooks/useProfile";
 import { Feather } from "@expo/vector-icons";
 import { format } from "date-fns";
+import * as ImagePicker from "expo-image-picker";
 import {
   View,
   Text,
@@ -14,8 +15,13 @@ import {
   Image,
   TouchableOpacity,
   RefreshControl,
+  Alert,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import UserAvatar from "@/components/UserAvatar";
+
+const DEFAULT_BANNER =
+  "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=400&fit=crop";
 
 const ProfileScreens = () => {
   const { currentUser, isLoading } = useCurrentUser();
@@ -35,10 +41,44 @@ const ProfileScreens = () => {
     saveProfile,
     updateFormField,
     isUpdating,
+    uploadProfileImage,
     refetch: refetchProfile,
   } = useProfile();
 
-  if (isLoading) {
+  const pickImage = async (imageType: "avatar" | "banner") => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!permission.granted) {
+      Alert.alert(
+        "Permission required",
+        "Please allow access to your photos to update your image.",
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: imageType === "avatar" ? [1, 1] : [2, 1],
+      quality: 0.8,
+    });
+
+    if (result.canceled) return;
+
+    const asset = result.assets[0];
+    const ext = asset.uri.split(".").pop()?.toLowerCase() || "jpg";
+
+    uploadProfileImage(
+      {
+        uri: asset.uri,
+        name: `${imageType}-${Date.now()}.${ext}`,
+        type: asset.mimeType || `image/${ext === "jpg" ? "jpeg" : ext}`,
+      },
+      imageType,
+    );
+  };
+
+  if (isLoading || !currentUser) {
     return (
       <View className="flex-1 bg-white items-center justify-center">
         <ActivityIndicator
@@ -80,22 +120,52 @@ const ProfileScreens = () => {
           />
         }
       >
-        <Image
-          source={{
-            uri:
-              currentUser.bannerImage ||
-              "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=400&fit=crop",
-          }}
-          className="w-full h-48"
-          resizeMode="cover"
-        />
+        {/* Banner */}
+        <View>
+          <Image
+            source={{ uri: currentUser.bannerImage || DEFAULT_BANNER }}
+            className="w-full h-48"
+            resizeMode="cover"
+          />
+          <TouchableOpacity
+            className="absolute right-3 bottom-3 bg-black/60 w-10 h-10 rounded-full items-center justify-center"
+            onPress={() => pickImage("banner")}
+            disabled={isUpdating}
+            activeOpacity={0.8}
+          >
+            <Feather
+              name="camera"
+              size={18}
+              color="white"
+            />
+          </TouchableOpacity>
+        </View>
 
         <View className="px-4 pb-4 border-b border-gray-100">
           <View className="flex-row justify-between items-end -mt-16 mb-4">
-            <Image
-              source={{ uri: currentUser.profilePicture }}
-              className="w-32 h-32 rounded-full border-4 border-white"
-            />
+            {/* Avatar */}
+            <View>
+              <View className="border-4 border-white rounded-full">
+                <UserAvatar
+                  displayName={currentUser.displayName}
+                  profilePicture={currentUser.profilePicture}
+                  size={120}
+                />
+              </View>
+              <TouchableOpacity
+                className="absolute right-0 bottom-0 bg-[#1DA1F2] w-9 h-9 rounded-full items-center justify-center border-2 border-white"
+                onPress={() => pickImage("avatar")}
+                disabled={isUpdating}
+                activeOpacity={0.8}
+              >
+                <Feather
+                  name="camera"
+                  size={16}
+                  color="white"
+                />
+              </TouchableOpacity>
+            </View>
+
             <TouchableOpacity
               className="border border-gray-300 px-6 py-2 rounded-full"
               onPress={openEditModal}
@@ -166,6 +236,16 @@ const ProfileScreens = () => {
         updateFormField={updateFormField}
         isUpdating={isUpdating}
       />
+
+      {/* Overlay loading khi đang upload */}
+      {isUpdating && !isEditModalVisible && (
+        <View className="absolute inset-0 bg-black/30 items-center justify-center">
+          <ActivityIndicator
+            size="large"
+            color="#fff"
+          />
+        </View>
+      )}
     </SafeAreaView>
   );
 };

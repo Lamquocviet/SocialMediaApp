@@ -3,6 +3,7 @@ import User from "../models/user.model.js";
 import Notification from "../models/notification.model.js";
 import Friend from "../models/friend.model.js";
 import FriendRequest from "../models/friendRequest.model.js";
+import cloudinary from "../config/cloudinary.js";
 
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -13,18 +14,122 @@ export const getUserProfile = asyncHandler(async (req, res) => {
 
   res.status(200).json({ user });
 });
-
 export const updateProfile = asyncHandler(async (req, res) => {
   const user = req.user;
-  if (!user) return res.status(404).json({ error: "User not found" });
 
-  const updatedUser = await User.findByIdAndUpdate(user._id, req.body, {
-    new: true,
+  if (!user) {
+    return res.status(404).json({ error: "User not found" });
+  }
+
+  const { displayName, bio, location, imageType } = req.body;
+
+  const updateData = {};
+
+  // 1. Cập nhật thông tin cá nhân
+  if (displayName !== undefined) {
+    updateData.displayName = displayName;
+  }
+
+  if (bio !== undefined) {
+    updateData.bio = bio;
+  }
+
+  if (location !== undefined) {
+    updateData.location = location;
+  }
+
+  let oldPublicId = null;
+  let newPublicId = null;
+
+  // 2. Upload avatar hoặc banner
+  if (req.file) {
+    console.log("File:", req.file.originalname);
+    console.log("Mimetype:", req.file.mimetype);
+    console.log("Buffer size:", req.file.size);
+    if (!["avatar", "banner"].includes(imageType)) {
+      return res.status(400).json({
+        error: "Invalid image type. Use avatar or banner",
+      });
+    }
+
+    // Xác định ảnh cũ
+    oldPublicId =
+      imageType === "avatar" ? user.profilePictureId : user.bannerImageId;
+
+    // Chuyển buffer thành base64
+    const base64Image = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
+
+    // Upload ảnh mới
+    const uploadResponse = await cloudinary.uploader.upload(base64Image, {
+      folder: "social_media_profiles",
+      resource_type: "image",
+      transformation: [
+        { width: 1200, height: 1200, crop: "limit" },
+        { quality: "auto" },
+        { fetch_format: "auto" },
+      ],
+    });
+
+    newPublicId = uploadResponse.public_id;
+
+    // Cập nhật URL và Public ID
+    if (imageType === "avatar") {
+      updateData.profilePicture = uploadResponse.secure_url;
+      updateData.profilePictureId = uploadResponse.public_id;
+    } else {
+      updateData.bannerImage = uploadResponse.secure_url;
+      updateData.bannerImageId = uploadResponse.public_id;
+    }
+  }
+
+  // 3. Kiểm tra dữ liệu cập nhật
+  if (Object.keys(updateData).length === 0) {
+    return res.status(400).json({
+      error: "No information provided to update",
+    });
+  }
+
+  // 4. Cập nhật MongoDB
+  let updatedUser;
+
+  try {
+    updatedUser = await User.findByIdAndUpdate(
+      user._id,
+      { $set: updateData },
+      {
+        new: true,
+        runValidators: true,
+      },
+    ).select("-hashedPassword");
+  } catch (error) {
+    // Nếu MongoDB cập nhật thất bại,
+    // xóa ảnh mới vừa upload để tránh ảnh rác
+    if (newPublicId) {
+      await cloudinary.uploader.destroy(newPublicId);
+    }
+
+    throw error;
+  }
+
+  if (!updatedUser) {
+    if (newPublicId) {
+      await cloudinary.uploader.destroy(newPublicId);
+    }
+
+    return res.status(404).json({
+      error: "User not found",
+    });
+  }
+
+  // 5. Xóa ảnh cũ sau khi cập nhật thành công
+  if (oldPublicId && oldPublicId !== newPublicId) {
+    await cloudinary.uploader.destroy(oldPublicId);
+  }
+
+  return res.status(200).json({
+    message: "Profile updated successfully",
+    user: updatedUser,
   });
-
-  if (!updatedUser) return res.status(404).json({ error: "User not found" });
-
-  res.status(200).json({ user: updatedUser });
 });
 
 export const syncUser = asyncHandler(async (req, res) => {
@@ -38,8 +143,9 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
   const user = req.user;
 
   if (!user) return res.status(404).json({ error: "User not found" });
+  const { hashedPassword, ...userWithoutPass } = user.toObject();
 
-  res.status(200).json({ user });
+  res.status(200).json({ user: userWithoutPass });
 });
 
 export const followUser = asyncHandler(async (req, res) => {
@@ -106,7 +212,7 @@ export const searchUsers = async (req, res) => {
       _id: { $ne: userId },
       $or: [{ username: keyword }, { displayName: keyword }],
     })
-      .select("_id username displayName avatarUrl")
+      .select("_id username displayName profilePicture")
       .limit(20)
       .lean();
 

@@ -7,19 +7,28 @@ import {
   ScrollView,
   TextInput,
 } from "react-native";
+import type { ProfileFormData } from "@/hooks/useProfile";
 
 interface EditProfileModalProps {
   isVisible: boolean;
   onClose: () => void;
-  formData: {
-    displayName: string;
-    bio: string;
-    location: string;
-  };
+  formData: ProfileFormData;
   saveProfile: () => void;
-  updateFormField: (field: string, value: string) => void;
+  updateFormField: (field: keyof ProfileFormData, value: string) => void;
   isUpdating: boolean;
 }
+// interface EditProfileModalProps {
+//   isVisible: boolean;
+//   onClose: () => void;
+//   formData: {
+//     displayName: string;
+//     bio: string;
+//     location: string;
+//   };
+//   saveProfile: () => void;
+//   updateFormField: (field: string, value: string) => void;
+//   isUpdating: boolean;
+// }
 
 const EditProfileModal = ({
   formData,

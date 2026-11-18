@@ -1,12 +1,5 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  Image,
-  Pressable,
-  ActivityIndicator,
-  Alert,
-} from "react-native";
+import { View, Text, Pressable, ActivityIndicator, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import type { AxiosError } from "axios";
 import SendRequestModal from "@/components/friendModals/SendRequestModal";
@@ -18,6 +11,7 @@ import {
   useAcceptFriendRequest,
   useDeclineFriendRequest,
 } from "@/hooks/useFriend";
+import UserAvatar from "./UserAvatar";
 
 type Props = {
   user: SearchUser;
@@ -54,7 +48,6 @@ export default function UserSearchResultCard({
   const [sendOpen, setSendOpen] = useState(false);
   const [declineOpen, setDeclineOpen] = useState(false);
   const isReceived = status === "request_received";
-  const initials = user.displayName?.trim()?.[0]?.toUpperCase() ?? "?";
 
   const errorMessage = (err: unknown, fallback: string) =>
     (err as AxiosError<{ message?: string }>)?.response?.data?.message ?? fallback;
@@ -102,17 +95,11 @@ export default function UserSearchResultCard({
         <View className="flex-row items-center gap-[10px]">
           {/* Avatar + online status */}
           <View className="relative h-12 w-12">
-            {user.avatarUrl ? (
-              <Image
-                source={{ uri: user.avatarUrl }}
-                className="h-12 w-12 rounded-full"
-              />
-            ) : (
-              <View className="h-12 w-12 items-center justify-center rounded-full bg-indigo-100">
-                <Text className="text-lg font-bold text-indigo-800">{initials}</Text>
-              </View>
-            )}
-
+            <UserAvatar
+              displayName={user.displayName}
+              profilePicture={user.profilePicture}
+              size={48}
+            />
             {user.isOnline !== undefined && (
               <View
                 className={`absolute bottom-0 right-0 h-[13px] w-[13px] rounded-full border-2 border-[#F4F2FF] ${

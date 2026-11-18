@@ -2,6 +2,7 @@ import { Post, User } from "@/types";
 import { formatDate, formatNumber } from "@/utils/formatters";
 import { AntDesign, Feather } from "@expo/vector-icons";
 import { View, Text, Alert, Image, TouchableOpacity } from "react-native";
+import UserAvatar from "./UserAvatar";
 
 interface PostCardProps {
   post: Post;
@@ -38,10 +39,13 @@ const PostCard = ({
   return (
     <View className="border-b border-gray-100 bg-white">
       <View className="flex-row p-4">
-        <Image
-          source={{ uri: post.user.profilePicture || "" }}
-          className="w-12 h-12 rounded-full mr-3"
-        />
+        <View className="mr-3">
+          <UserAvatar
+            displayName={post.user.displayName}
+            profilePicture={post.user.profilePicture}
+            size={48}
+          />
+        </View>
 
         <View className="flex-1">
           <View className="flex-row items-center justify-between mb-1">

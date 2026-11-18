@@ -11,7 +11,8 @@ export const aj = arcjet({
 
     // bot detection - block all bots except search engines
     detectBot({
-      mode: "LIVE",
+      // mode: "LIVE",
+      mode: "DRY_RUN",
       allow: [
         "CATEGORY:SEARCH_ENGINE",
         "JAVA_OKHTTP", // Android (React Native / axios)

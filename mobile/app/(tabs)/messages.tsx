@@ -73,7 +73,7 @@ export default function ChatListScreen() {
           id: conversationId,
           type: "direct",
           name: user.displayName,
-          avatar: user.avatarUrl ?? "",
+          avatar: user.profilePicture ?? "",
           recipientId: user._id,
         },
       } as any);

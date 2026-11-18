@@ -10,7 +10,7 @@ import type {
 } from "@/types/chat";
 
 const RAW_API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL || "http://192.168.1.5:5001";
+  process.env.EXPO_PUBLIC_API_URL || "http://192.168.1.22:5001";
 
 export const API_BASE_URL = RAW_API_BASE_URL.endsWith("/api")
   ? RAW_API_BASE_URL
@@ -61,8 +61,6 @@ export const authApi = {
   signIn: (payload: { username: string; password: string }) =>
     axios.post(`${API_BASE_URL}/auth/signin`, payload),
 };
-
-const pageLimit = 50;
 
 export const chatService = {
   // 1. Lấy danh sách hội thoại
@@ -128,7 +126,12 @@ export const userApi = {
     api.get("/users/search", { params: { q: query } }),
   syncUser: (api: AxiosInstance) => api.post("/users/sync"),
   getCurrentUser: (api: AxiosInstance) => api.get("/users/me"),
-  updateProfile: (api: AxiosInstance, data: any) => api.put("/users/profile", data),
+  updateProfile: (api: AxiosInstance, data: any) =>
+    api.patch("/users/profile", data, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }),
 };
 export const friendApi = {
   getRequestedFriends: (api: AxiosInstance) => api.get("/friends/requests"),

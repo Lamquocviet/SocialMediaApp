@@ -3,6 +3,7 @@ import { View, Text, Image, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import type { Conversation } from "@/types/chat";
+import UserAvatar from "@/components/UserAvatar";
 
 interface ConversationItemProps {
   conversation: Conversation;
@@ -74,7 +75,7 @@ export default function ConversationItem({
     ? (conversation.group?.name ?? "Chat nhóm")
     : (otherUser?.displayName ?? "Người dùng");
 
-  const avatarUrl = otherUser?.avatarUrl;
+  const avatarUrl = otherUser?.profilePicture;
 
   const lastMessage = conversation.lastMessage;
 
@@ -138,20 +139,12 @@ export default function ConversationItem({
               color={AVATAR_ICON}
             />
           </View>
-        ) : avatarUrl ? (
-          <Image
-            source={{ uri: avatarUrl }}
-            style={avatarStyle}
-          />
         ) : (
-          <View
-            style={avatarStyle}
-            className="items-center justify-center bg-indigo-100"
-          >
-            <Text className="text-lg font-bold text-indigo-800">
-              {displayName.charAt(0).toUpperCase()}
-            </Text>
-          </View>
+          <UserAvatar
+            displayName={displayName}
+            profilePicture={avatarUrl}
+            size={AVATAR_SIZE}
+          />
         )}
 
         {/* Nội dung */}

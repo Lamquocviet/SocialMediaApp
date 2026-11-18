@@ -25,14 +25,22 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    profilePictureId: {
+      type: String,
+      default: "",
+    },
     bannerImage: {
+      type: String,
+      default: "",
+    },
+    bannerImageId: {
       type: String,
       default: "",
     },
     bio: {
       type: String,
       default: "",
-      maxLength: 160,
+      maxLength: 300,
     },
     location: {
       type: String,

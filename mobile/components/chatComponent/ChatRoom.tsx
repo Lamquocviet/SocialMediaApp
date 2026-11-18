@@ -126,7 +126,9 @@ export default function ChatRoom({
   const title =
     conversationDisplayName ?? fallbackName ?? (isGroup ? "Nhóm" : "Người dùng");
 
-  const headerAvatar = isGroup ? null : (other?.avatarUrl ?? fallbackAvatar ?? null);
+  const headerAvatar = isGroup
+    ? null
+    : (other?.profilePicture ?? fallbackAvatar ?? null);
 
   const memberCount = conversation?.participants.length ?? 0;
 
@@ -228,7 +230,7 @@ export default function ChatRoom({
             <View className="mr-1.5 w-7">
               {lastOfCluster && (
                 <Avatar
-                  uri={sender?.avatarUrl}
+                  uri={sender?.profilePicture}
                   size={24}
                 />
               )}

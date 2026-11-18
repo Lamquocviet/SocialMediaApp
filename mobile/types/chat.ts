@@ -3,14 +3,14 @@ export type ConversationType = "direct" | "group";
 export interface Participant {
   _id: string;
   displayName: string;
-  avatarUrl?: string | null;
+  profilePicture?: string | null;
   joinedAt: string;
 }
 
 export interface SeenUser {
   _id: string;
   displayName?: string;
-  avatarUrl?: string | null;
+  profilePicture?: string | null;
 }
 
 export interface Group {
@@ -28,7 +28,7 @@ export interface LastMessage {
   senderId: {
     _id: string;
     displayName: string;
-    avatarUrl?: string | null;
+    profilePicture?: string | null;
   };
 }
 

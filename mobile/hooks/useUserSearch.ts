@@ -12,7 +12,7 @@ export interface SearchUser {
   _id: string;
   username: string;
   displayName: string;
-  avatarUrl?: string;
+  profilePicture?: string;
   friendshipStatus: FriendshipStatus;
   requestId: string | null;
   // Tuỳ chọn: BE chưa trả, có thì UI tự hiện
